@@ -1,372 +1,354 @@
-import Cloudflare from "cloudflare";
+import { Hono } from "hono";
+import { Env, CognitiveDashboardData } from "./types/cognitive";
+import { AtomSpace } from "./durable-objects/AtomSpace";
+import { MindAgent } from "./durable-objects/MindAgent";
 
-// Deploy function (copied from deploy-wfp.ts)
-async function deploySnippetToNamespace(
-	opts: {
-		namespaceName: string;
-		scriptName: string;
-		code: string;
-		bindings?: Array<
-			| { type: "plain_text"; name: string; text: string }
-			| { type: "kv_namespace"; name: string; namespace_id: string }
-			| { type: "r2_bucket"; name: string; bucket_name: string }
-		>;
-	},
-	env: {
-		CLOUDFLARE_API_TOKEN: string;
-		CLOUDFLARE_ACCOUNT_ID: string;
-	},
-) {
-	const { namespaceName, scriptName, code, bindings = [] } = opts;
+/**
+ * Cogflare OpenCog Worker Platform
+ * 
+ * A distributed cognitive architecture based on OpenCog, running on Cloudflare Workers.
+ * Provides AtomSpace hypergraph knowledge representation, autonomous MindAgents,
+ * and goal-oriented cognitive processing across the edge.
+ */
 
-	const cf = new Cloudflare({
-		apiToken: env.CLOUDFLARE_API_TOKEN,
+const app = new Hono<{ Bindings: Env }>();
+
+// CORS middleware for development
+app.use('*', async (c, next) => {
+	// Set CORS headers
+	c.res.headers.set('Access-Control-Allow-Origin', '*');
+	c.res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+	c.res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+	
+	if (c.req.method === 'OPTIONS') {
+		return c.text('', 200);
+	}
+	
+	await next();
+});
+
+/**
+ * Root endpoint - Cognitive Platform Status
+ */
+app.get('/', async (c) => {
+	const atomSpaceId = c.env.ATOMSPACE.idFromName("primary");
+	const atomSpaceStub = c.env.ATOMSPACE.get(atomSpaceId);
+	
+	const mindAgentId = c.env.MIND_AGENT.idFromName("primary");
+	const mindAgentStub = c.env.MIND_AGENT.get(mindAgentId);
+
+	try {
+		// Get AtomSpace stats
+		const atomSpaceResponse = await atomSpaceStub.fetch(new Request("http://dummy/stats"));
+		const atomSpaceStats = await atomSpaceResponse.json();
+
+		// Get MindAgent stats
+		const agentsResponse = await mindAgentStub.fetch(new Request("http://dummy/agents"));
+		const agentsData = await agentsResponse.json();
+
+		const goalsResponse = await mindAgentStub.fetch(new Request("http://dummy/goals"));
+		const goalsData = await goalsResponse.json();
+
+		const status = {
+			platform: "Cogflare OpenCog Platform",
+			version: "1.0.0",
+			status: "active",
+			atomSpace: atomSpaceStats.success ? atomSpaceStats.data : null,
+			mindAgents: {
+				total: agentsData.success ? agentsData.data.length : 0,
+				active: agentsData.success ? agentsData.data.filter((a: any) => a.enabled).length : 0
+			},
+			goals: {
+				total: goalsData.success ? goalsData.data.length : 0,
+				active: goalsData.success ? goalsData.data.filter((g: any) => g.status === 'active').length : 0
+			},
+			timestamp: Date.now()
+		};
+
+		return c.json(status);
+	} catch (error) {
+		return c.json({
+			platform: "Cogflare OpenCog Platform",
+			version: "1.0.0",
+			status: "error",
+			error: error instanceof Error ? error.message : "Unknown error",
+			timestamp: Date.now()
+		}, 500);
+	}
+});
+
+/**
+ * AtomSpace API Routes
+ */
+app.route('/atomspace/*', async (c) => {
+	const atomSpaceId = c.env.ATOMSPACE.idFromName("primary");
+	const atomSpaceStub = c.env.ATOMSPACE.get(atomSpaceId);
+	
+	// Forward request to AtomSpace Durable Object
+	const url = new URL(c.req.url);
+	url.pathname = url.pathname.replace('/atomspace', '');
+	
+	const forwardedRequest = new Request(url.toString(), {
+		method: c.req.method,
+		headers: c.req.headers,
+		body: c.req.method !== 'GET' && c.req.method !== 'HEAD' ? await c.req.arrayBuffer() : undefined
 	});
 
-	// Ensure dispatch namespace exists
+	const response = await atomSpaceStub.fetch(forwardedRequest);
+	return new Response(response.body, {
+		status: response.status,
+		headers: response.headers
+	});
+});
+
+/**
+ * MindAgent API Routes
+ */
+app.route('/mindagent/*', async (c) => {
+	const mindAgentId = c.env.MIND_AGENT.idFromName("primary");
+	const mindAgentStub = c.env.MIND_AGENT.get(mindAgentId);
+	
+	// Forward request to MindAgent Durable Object
+	const url = new URL(c.req.url);
+	url.pathname = url.pathname.replace('/mindagent', '');
+	
+	const forwardedRequest = new Request(url.toString(), {
+		method: c.req.method,
+		headers: c.req.headers,
+		body: c.req.method !== 'GET' && c.req.method !== 'HEAD' ? await c.req.arrayBuffer() : undefined
+	});
+
+	const response = await mindAgentStub.fetch(forwardedRequest);
+	return new Response(response.body, {
+		status: response.status,
+		headers: response.headers
+	});
+});
+
+/**
+ * Cognitive Dashboard API
+ */
+app.get('/api/dashboard', async (c) => {
 	try {
-		await cf.workersForPlatforms.dispatch.namespaces.get(namespaceName, {
-			account_id: env.CLOUDFLARE_ACCOUNT_ID,
-		});
-	} catch {
-		await cf.workersForPlatforms.dispatch.namespaces.create({
-			account_id: env.CLOUDFLARE_ACCOUNT_ID,
-			name: namespaceName,
-		});
+		const atomSpaceId = c.env.ATOMSPACE.idFromName("primary");
+		const atomSpaceStub = c.env.ATOMSPACE.get(atomSpaceId);
+		
+		const mindAgentId = c.env.MIND_AGENT.idFromName("primary");
+		const mindAgentStub = c.env.MIND_AGENT.get(mindAgentId);
+
+		// Get comprehensive cognitive data
+		const [atomSpaceResponse, agentsResponse, goalsResponse] = await Promise.all([
+			atomSpaceStub.fetch(new Request("http://dummy/stats")),
+			mindAgentStub.fetch(new Request("http://dummy/agents")),
+			mindAgentStub.fetch(new Request("http://dummy/goals"))
+		]);
+
+		const atomSpaceData = await atomSpaceResponse.json();
+		const agentsData = await agentsResponse.json();
+		const goalsData = await goalsResponse.json();
+
+		const dashboardData: CognitiveDashboardData = {
+			atomSpace: atomSpaceData.success ? atomSpaceData.data : {
+				totalAtoms: 0,
+				nodeCount: 0,
+				linkCount: 0,
+				averageTruthValue: { strength: 0, confidence: 0 },
+				averageAttentionValue: { sti: 0, lti: 0, vlti: 0 }
+			},
+			mindAgents: {
+				activeAgents: agentsData.success ? agentsData.data.filter((a: any) => a.enabled).length : 0,
+				totalExecutions: 0, // Would need to track this
+				averageExecutionTime: 0, // Would need to calculate this
+				recentResults: [] // Would need to store recent execution results
+			},
+			goals: {
+				activeGoals: goalsData.success ? goalsData.data.filter((g: any) => g.status === 'active').length : 0,
+				completedGoals: goalsData.success ? goalsData.data.filter((g: any) => g.status === 'completed').length : 0,
+				averagePriority: goalsData.success ? 
+					goalsData.data.reduce((sum: number, g: any) => sum + g.priority, 0) / goalsData.data.length : 0,
+				recentGoals: goalsData.success ? goalsData.data.slice(-5) : []
+			},
+			performance: {
+				operationsPerSecond: 0, // Would need to track this
+				memoryUsage: 0, // Would need to estimate this
+				responseTime: Date.now() // Simple timestamp for now
+			}
+		};
+
+		return c.json(dashboardData);
+	} catch (error) {
+		return c.json({ error: error instanceof Error ? error.message : "Unknown error" }, 500);
 	}
+});
 
-	const moduleFileName = `${scriptName}.mjs`;
+/**
+ * Cognitive Operations API
+ */
+app.post('/api/cognitive/perceive', async (c) => {
+	try {
+		const { input, inputType = "text" } = await c.req.json();
+		
+		const atomSpaceId = c.env.ATOMSPACE.idFromName("primary");
+		const atomSpaceStub = c.env.ATOMSPACE.get(atomSpaceId);
 
-	// Upload worker to namespace
-	await cf.workersForPlatforms.dispatch.namespaces.scripts.update(
-		namespaceName,
-		scriptName,
-		{
-			account_id: env.CLOUDFLARE_ACCOUNT_ID,
-			metadata: {
-				main_module: moduleFileName,
-				bindings,
-			},
-			files: {
-				[moduleFileName]: new File([code], moduleFileName, {
-					type: "application/javascript+module",
-				}),
-			},
-		},
-	);
+		// Create a concept node for the input
+		const conceptResponse = await atomSpaceStub.fetch(new Request("http://dummy/node", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				type: "ConceptNode",
+				name: `input_${Date.now()}`,
+				truthValue: { strength: 0.8, confidence: 0.9 },
+				attentionValue: { sti: 100, lti: 0, vlti: 0 }
+			})
+		}));
 
-	return { namespace: namespaceName, script: scriptName };
-}
+		const conceptData = await conceptResponse.json();
 
-const HTML_UI = ({ isReadOnly }: { isReadOnly: boolean }) => `<!DOCTYPE html>
-<html>
-<head>
-  <title>Worker Publisher</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#x1F680;</text></svg>">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+		return c.json({
+			success: true,
+			message: "Input perceived and added to AtomSpace",
+			data: conceptData.data,
+			timestamp: Date.now()
+		});
+	} catch (error) {
+		return c.json({ 
+			success: false,
+			error: error instanceof Error ? error.message : "Unknown error" 
+		}, 500);
+	}
+});
 
-    body {
-      font-family: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: #fef7ed;
-      color: #1a1a1a;
-      line-height: 1.6;
-      padding: 20px;
-    }
+/**
+ * AI-Enhanced Reasoning
+ */
+app.post('/api/cognitive/reason', async (c) => {
+	try {
+		const { query, context } = await c.req.json();
+		
+		// Use Cloudflare AI for enhanced reasoning
+		const aiResponse = await c.env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+			messages: [
+				{
+					role: "system",
+					content: "You are a cognitive reasoning engine. Analyze the query in the context of a cognitive architecture and provide insights."
+				},
+				{
+					role: "user",
+					content: `Query: ${query}\nContext: ${context || "No additional context provided"}`
+				}
+			]
+		});
 
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-    }
+		const atomSpaceId = c.env.ATOMSPACE.idFromName("primary");
+		const atomSpaceStub = c.env.ATOMSPACE.get(atomSpaceId);
 
-    h1 {
-      font-size: 3rem;
-      font-weight: 900;
-      color: #1a1a1a;
-      text-shadow: 4px 4px 0px #fb923c;
-      margin-bottom: 2rem;
-      text-transform: uppercase;
-      letter-spacing: -0.02em;
-    }
+		// Store the reasoning result in AtomSpace
+		const reasoningNode = await atomSpaceStub.fetch(new Request("http://dummy/node", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				type: "ConceptNode",
+				name: `reasoning_${Date.now()}`,
+				truthValue: { strength: 0.7, confidence: 0.8 },
+				attentionValue: { sti: 80, lti: 10, vlti: 0 }
+			})
+		}));
 
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
+		return c.json({
+			success: true,
+			reasoning: aiResponse.response,
+			atomSpaceEntry: (await reasoningNode.json()).data,
+			timestamp: Date.now()
+		});
+	} catch (error) {
+		return c.json({ 
+			success: false,
+			error: error instanceof Error ? error.message : "Unknown error" 
+		}, 500);
+	}
+});
 
-    label {
-      display: block;
-      font-weight: 700;
-      font-size: 1.1rem;
-      margin-bottom: 0.5rem;
-      color: #1a1a1a;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
+/**
+ * Health check endpoint
+ */
+app.get('/health', async (c) => {
+	return c.json({
+		status: "healthy",
+		platform: "Cogflare OpenCog Platform",
+		timestamp: Date.now()
+	});
+});
 
-    input, textarea {
-      width: 100%;
-      padding: 1rem;
-      border: 4px solid #1a1a1a;
-      background: white;
-      font-family: "JetBrains Mono", "Fira Code", monospace;
-      font-size: 1rem;
-      box-shadow: 8px 8px 0px #fb923c;
-      transition: all 0.1s ease;
-    }
+/**
+ * Serve static files from public directory
+ */
+app.get('/*', async (c) => {
+	const url = new URL(c.req.url);
+	let filePath = url.pathname;
+	
+	// Default to index.html for root path
+	if (filePath === '/' || filePath === '') {
+		filePath = '/index.html';
+	}
+	
+	try {
+		// Simple static file serving - in production you'd want more robust handling
+		const response = await fetch(`${url.origin}/public${filePath}`);
+		if (response.ok) {
+			return response;
+		}
+		
+		// Fallback to index.html for SPA routing
+		const indexResponse = await fetch(`${url.origin}/public/index.html`);
+		return indexResponse;
+	} catch (error) {
+		// Return a simple HTML response if file serving fails
+		return c.html(`
+			<!DOCTYPE html>
+			<html>
+			<head>
+				<title>Cogflare OpenCog Platform</title>
+				<style>
+					body { font-family: Arial, sans-serif; margin: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+					.container { max-width: 600px; margin: 0 auto; text-align: center; }
+					h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+					p { font-size: 1.1rem; margin-bottom: 2rem; }
+					.error { background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; }
+				</style>
+			</head>
+			<body>
+				<div class="container">
+					<h1>🧠 Cogflare OpenCog Platform</h1>
+					<p>Autonomous cognitive architecture powered by Cloudflare Workers</p>
+					<div class="error">
+						<p>Static file serving not available. Please use the API endpoints directly:</p>
+						<ul style="text-align: left; max-width: 400px; margin: 0 auto;">
+							<li>GET /health - Health check</li>
+							<li>GET /api/dashboard - Cognitive dashboard data</li>
+							<li>POST /api/cognitive/perceive - Perception input</li>
+							<li>POST /api/cognitive/reason - AI reasoning</li>
+							<li>GET /atomspace/stats - AtomSpace statistics</li>
+							<li>GET /mindagent/agents - MindAgent information</li>
+						</ul>
+					</div>
+				</div>
+			</body>
+			</html>
+		`);
+	}
+});
 
-    input:focus, textarea:focus {
-      outline: none;
-      transform: translate(-2px, -2px);
-      box-shadow: 12px 12px 0px #fb923c;
-    }
-
-    textarea {
-      height: 300px;
-      resize: vertical;
-    }
-
-    button {
-      background: #fb923c;
-      color: #1a1a1a;
-      border: 4px solid #1a1a1a;
-      padding: 1rem 2rem;
-      font-weight: 900;
-      font-size: 1.1rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      cursor: pointer;
-      box-shadow: 8px 8px 0px #1a1a1a;
-      transition: all 0.1s ease;
-      font-family: inherit;
-    }
-
-    button:hover {
-      transform: translate(-2px, -2px);
-      box-shadow: 12px 12px 0px #1a1a1a;
-    }
-
-    button:active {
-      transform: translate(2px, 2px);
-      box-shadow: 4px 4px 0px #1a1a1a;
-    }
-
-    button:disabled {
-      background: #9ca3af;
-      color: #6b7280;
-      cursor: not-allowed;
-      box-shadow: 4px 4px 0px #6b7280;
-    }
-
-    button:disabled:hover {
-      transform: none;
-      box-shadow: 4px 4px 0px #6b7280;
-    }
-
-    .result {
-      margin-top: 2rem;
-      padding: 1.5rem;
-      border: 4px solid #1a1a1a;
-      background: white;
-      box-shadow: 8px 8px 0px #fb923c;
-      font-weight: 600;
-    }
-
-    .result.success {
-      background: #dcfce7;
-      border-color: #166534;
-      box-shadow: 8px 8px 0px #22c55e;
-    }
-
-    .result.error {
-      background: #fef2f2;
-      border-color: #dc2626;
-      box-shadow: 8px 8px 0px #ef4444;
-    }
-
-    .result a {
-      color: #fb923c;
-      font-weight: 900;
-      text-decoration: none;
-      border-bottom: 3px solid #fb923c;
-    }
-
-    .result a:hover {
-      background: #fb923c;
-      color: #1a1a1a;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>Worker Publisher</h1>
-    <form id="deployForm">
-      <div class="form-group">
-        <label for="scriptName">Script Name</label>
-        <input type="text" id="scriptName" placeholder="my-worker" required>
-      </div>
-      <div class="form-group">
-        <label for="code">Worker Code</label>
-        <textarea id="code">export default {
-  async fetch(request, env, ctx) {
-    // Get worker name from URL path
-    const url = new URL(request.url);
-    const workerName = url.pathname.split('/')[1] || 'Your Worker';
-
-    const html = '<!DOCTYPE html>' +
-      '<html><head><meta charset="UTF-8">' +
-      '<title>' + workerName + ' Deployed!</title>' +
-      '<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2240%22 fill=%22%23fb923c%22/></svg>">' +
-      '<style>* { margin: 0; padding: 0; box-sizing: border-box; }' +
-      'body { font-family: "Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif; background: #fef7ed; color: #1a1a1a; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }' +
-      '.container { text-align: center; max-width: 600px; }' +
-      'h1 { font-size: 4rem; font-weight: 900; color: #1a1a1a; text-shadow: 6px 6px 0px #fb923c; margin-bottom: 2rem; text-transform: uppercase; letter-spacing: -0.02em; word-break: break-word; }' +
-      '.deployed-badge { background: #fb923c; color: #1a1a1a; border: 4px solid #1a1a1a; padding: 1.5rem 3rem; font-weight: 900; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 12px 12px 0px #1a1a1a; display: inline-block; margin-bottom: 3rem; transform: rotate(-2deg); }' +
-      'p { font-size: 1.3rem; font-weight: 600; margin-bottom: 2rem; color: #374151; }' +
-      '.success-emoji { font-size: 3rem; margin-bottom: 1rem; display: block; }' +
-      '.deploy-more-btn { background: #22c55e; color: #1a1a1a; border: 4px solid #1a1a1a; padding: 1rem 2rem; font-weight: 900; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; text-decoration: none; display: inline-block; margin-top: 2rem; box-shadow: 8px 8px 0px #1a1a1a; transition: all 0.1s ease; transform: rotate(1deg); }' +
-      '.deploy-more-btn:hover { transform: rotate(1deg) translate(-2px, -2px); box-shadow: 12px 12px 0px #1a1a1a; }' +
-      '.deploy-more-btn:active { transform: rotate(1deg) translate(2px, 2px); box-shadow: 4px 4px 0px #1a1a1a; }' +
-      '</style></head><body><div class="container">' +
-      '<h1>' + workerName.toUpperCase() + '</h1>' +
-      '<div class="deployed-badge">IS NOW DEPLOYED!</div>' +
-      '<p>Your Cloudflare Worker is live and ready to serve the world!</p>' +
-      '<a href="/" class="deploy-more-btn">DEPLOY MORE!</a>' +
-      '</div></body></html>';
-
-    return new Response(html, {
-      headers: { 'Content-Type': 'text/html' }
-    });
-  }
-};</textarea>
-      </div>
-      <button type="submit"${isReadOnly ? " disabled" : ""}>Deploy Worker</button>
-    </form>
-    ${isReadOnly ? '<div class="result error">Deployment is disabled in read-only mode</div>' : ""}
-    <div id="result"></div>
-  </div>
-
-  <script>
-    const isReadOnly = ${isReadOnly};
-
-    document.getElementById('deployForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const scriptName = document.getElementById('scriptName').value;
-      const code = document.getElementById('code').value;
-      const resultDiv = document.getElementById('result');
-
-      resultDiv.innerHTML = '<div style="font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em;">Deploying...</div>';
-
-      try {
-        const response = await fetch('/deploy', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ scriptName, code })
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-          resultDiv.innerHTML = \`<div class="result success">Successfully deployed worker "\${result.script}"! Redirecting...</div>\`;
-          // Redirect to the deployed worker after 2 seconds
-          setTimeout(() => {
-            window.location.href = '/' + result.script;
-          }, 2000);
-        } else {
-          resultDiv.innerHTML = \`<div class="result error">Error: \${result.error}</div>\`;
-        }
-      } catch (error) {
-        resultDiv.innerHTML = \`<div class="result error">Error: \${error.message}</div>\`;
-      }
-    });
-  </script>
-</body>
-</html>`;
+/**
+ * Export the Durable Object classes and main handler
+ */
+export { AtomSpace, MindAgent };
 
 export default {
-	async fetch(
-		request: Request,
-		env: {
-			CLOUDFLARE_API_TOKEN: string;
-			CLOUDFLARE_ACCOUNT_ID: string;
-			DISPATCHER: any;
-			READONLY: string | boolean;
-		},
-	) {
-		const url = new URL(request.url);
-		const pathSegments = url.pathname.split("/").filter(Boolean);
-		const isReadOnly = env.READONLY === "true" || env.READONLY === true;
-
-		// Handle UI route
-		if (pathSegments.length === 0) {
-			return new Response(HTML_UI({ isReadOnly }), {
-				headers: { "Content-Type": "text/html" },
-			});
-		}
-
-		// Handle deploy endpoint
-		if (pathSegments[0] === "deploy" && request.method === "POST") {
-			if (isReadOnly) {
-				return new Response(
-					JSON.stringify({ error: "Read-only mode enabled" }),
-					{
-						status: 403,
-						headers: { "Content-Type": "application/json" },
-					},
-				);
-			}
-			try {
-				const { scriptName, code } = await request.json();
-
-				if (!scriptName || !code) {
-					return new Response(
-						JSON.stringify({ error: "Missing scriptName or code" }),
-						{
-							status: 400,
-							headers: { "Content-Type": "application/json" },
-						},
-					);
-				}
-
-				const result = await deploySnippetToNamespace(
-					{
-						namespaceName: "my-dispatch-namespace",
-						scriptName,
-						code,
-					},
-					env,
-				);
-
-				return new Response(JSON.stringify(result), {
-					headers: { "Content-Type": "application/json" },
-				});
-			} catch (error) {
-				return new Response(JSON.stringify({ error: error.message }), {
-					status: 500,
-					headers: { "Content-Type": "application/json" },
-				});
-			}
-		}
-
-		// Handle worker dispatch (existing functionality)
-		const workerName = pathSegments[0];
-
-		try {
-			const worker = env.DISPATCHER.get(workerName);
-			return await worker.fetch(request);
-		} catch (e) {
-			if (e.message.startsWith("Worker not found")) {
-				return new Response(`Worker '${workerName}' not found`, {
-					status: 404,
-				});
-			}
-			return new Response("Internal error", { status: 500 });
-		}
-	},
-};
+	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+		return app.fetch(request, env, ctx);
+	}
+} satisfies ExportedHandler<Env>;
 
 
 ================================================================================
