@@ -1,3 +1,9 @@
+# CogFlare
+
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cogpy/cogflare-temp/edit/main/cogflare-worker-platform-template)
+
+
 # Worker Publisher
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/templates/tree/main/worker-publisher-template)
