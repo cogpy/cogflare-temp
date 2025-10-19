@@ -1,0 +1,272 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "vite-react-template",
+	"main": "./src/worker/index.ts",
+	"compatibility_date": "2025-10-08",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true,
+	"assets": {
+		"directory": "./dist/client",
+		"not_found_handling": "single-page-application"
+	}
+}
+
+
+================================================================================
+Content from: wrangler (2).json
+================================================================================
+
+{
+	"compatibility_date": "2025-10-08",
+	"main": "src/index.ts",
+	"name": "text-to-image-template",
+	"upload_source_maps": true,
+	"ai": {
+		"binding": "AI"
+	},
+	"observability": {
+		"enabled": true
+	}
+}
+
+
+================================================================================
+Content from: wrangler (3).json
+================================================================================
+
+{
+	"name": "remix-starter-template",
+	"compatibility_date": "2025-10-08",
+	"main": "./server.ts",
+	"assets": {
+		"directory": "./build/client"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true
+}
+
+
+================================================================================
+Content from: wrangler (4).json
+================================================================================
+
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "react-router-starter-template",
+	"main": "./workers/app.ts",
+	"compatibility_date": "2025-10-08",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true,
+	"vars": {
+		"VALUE_FROM_CLOUDFLARE": "Hello from Cloudflare"
+	}
+}
+
+
+================================================================================
+Content from: wrangler (5).json
+================================================================================
+
+{
+	"compatibility_date": "2025-10-08",
+	"main": "src/index.ts",
+	"name": "r2-explorer-template",
+	"assets": {
+		"directory": "node_modules/r2-explorer/dashboard",
+		"binding": "ASSETS",
+		"html_handling": "auto-trailing-slash",
+		"not_found_handling": "single-page-application"
+	},
+	"r2_buckets": [
+		{
+			"binding": "bucket",
+			"bucket_name": "r2-explorer-bucket",
+			"preview_bucket_name": "r2-explorer-bucket"
+		}
+	],
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true
+}
+
+
+================================================================================
+Content from: wrangler (6).json
+================================================================================
+
+{
+	"compatibility_date": "2025-10-08",
+	"main": "src/index.ts",
+	"name": "openauth-template",
+	"upload_source_maps": true,
+	"kv_namespaces": [
+		{
+			"binding": "AUTH_STORAGE",
+			"id": "afec91ff3f7e4b0b9b9323fc6cf5ff85"
+		}
+	],
+	"d1_databases": [
+		{
+			"binding": "AUTH_DB",
+			"database_name": "openauth-template-auth-db",
+			"database_id": "d4dfb2e9-2fd3-4d04-9c83-57b4336a5958"
+		}
+	],
+	"observability": {
+		"enabled": true
+	},
+	"compatibility_flags": ["nodejs_compat"]
+}
+
+
+================================================================================
+Content from: wrangler (7).json
+================================================================================
+
+{
+	"compatibility_date": "2025-10-08",
+	"main": "src/server/index.ts",
+	"name": "multiplayer-globe-template",
+	"migrations": [
+		{
+			"new_sqlite_classes": ["Globe"],
+			"tag": "v1"
+		}
+	],
+	"assets": {
+		"directory": "public"
+	},
+	"build": {
+		"command": "npx esbuild src/client/index.tsx --bundle --outdir=public/dist --splitting --sourcemap --format=esm"
+	},
+	"durable_objects": {
+		"bindings": [
+			{
+				"class_name": "Globe",
+				"name": "Globe"
+			}
+		]
+	},
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true
+}
+
+
+================================================================================
+Content from: wrangler (8).json
+================================================================================
+
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "hello-world-do-template",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-10-08",
+	"upload_source_maps": true,
+	"migrations": [
+		{
+			"new_sqlite_classes": ["MyDurableObject"],
+			"tag": "v1"
+		}
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"class_name": "MyDurableObject",
+				"name": "MY_DURABLE_OBJECT"
+			}
+		]
+	},
+	"observability": {
+		"enabled": true
+	}
+}
+
+
+================================================================================
+Content from: wrangler (9).json
+================================================================================
+
+{
+	"compatibility_date": "2025-10-08",
+	"main": "src/server/index.ts",
+	"name": "durable-chat-template",
+	"migrations": [
+		{
+			"new_sqlite_classes": ["Chat"],
+			"tag": "v1"
+		}
+	],
+	"assets": {
+		"directory": "./public",
+		"binding": "ASSETS",
+		"not_found_handling": "single-page-application"
+	},
+	"build": {
+		"command": "esbuild src/client/index.tsx --bundle --splitting --format=esm --platform=browser --outdir=public/dist"
+	},
+	"durable_objects": {
+		"bindings": [
+			{
+				"class_name": "Chat",
+				"name": "Chat"
+			}
+		]
+	},
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true
+}
+
+
+================================================================================
+Content from: wrangler (10).json
+================================================================================
+
+{
+	"compatibility_date": "2025-10-08",
+	"main": "src/index.ts",
+	"name": "d1-template",
+	"upload_source_maps": true,
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_id": "151f7d9b-365f-41d7-83ed-0bf4eeef5086",
+			"database_name": "d1-template-database"
+		}
+	],
+	"observability": {
+		"enabled": true
+	}
+}
+
+
+================================================================================
+Content from: wrangler (11).json
+================================================================================
+
+{
+	"name": "astro-blog-starter-template",
+	"compatibility_date": "2025-10-08",
+	"compatibility_flags": ["nodejs_compat"],
+	"main": "./dist/_worker.js/index.js",
+	"assets": {
+		"directory": "./dist",
+		"binding": "ASSETS"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true
+}

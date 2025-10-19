@@ -1,0 +1,803 @@
+{
+	"files": [],
+	"references": [
+		{ "path": "./tsconfig.app.json" },
+		{ "path": "./tsconfig.node.json" },
+		{ "path": "./tsconfig.worker.json" }
+	]
+}
+
+
+================================================================================
+Content from: tsconfig (2).json
+================================================================================
+
+{
+	"include": [
+		"worker-configuration.d.ts",
+		"env.d.ts",
+		"**/*.ts",
+		"**/*.tsx",
+		"**/.server/**/*.ts",
+		"**/.server/**/*.tsx",
+		"**/.client/**/*.ts",
+		"**/.client/**/*.tsx",
+		".eslintrc.js"
+	],
+	"compilerOptions": {
+		"lib": ["DOM", "DOM.Iterable", "ES2022"],
+		"types": [
+			"@remix-run/cloudflare",
+			"@cloudflare/workers-types",
+			"vite/client"
+		],
+		"isolatedModules": true,
+		"esModuleInterop": true,
+		"jsx": "react-jsx",
+		"moduleResolution": "Bundler",
+		"resolveJsonModule": true,
+		"target": "ES2022",
+		"strict": true,
+		"allowJs": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"baseUrl": ".",
+		"paths": {
+			"~/*": ["./app/*"]
+		},
+
+		// Remix takes care of building everything in `remix build`.
+		"noEmit": true
+	}
+}
+
+
+================================================================================
+Content from: tsconfig (3).json
+================================================================================
+
+{
+	"compilerOptions": {
+		"target": "esnext",
+		"lib": ["esnext"],
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"types": ["./worker-configuration.d.ts"],
+		"noEmit": true,
+		"isolatedModules": true,
+		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true,
+		"strict": true
+	},
+	"include": ["src"]
+}
+
+
+================================================================================
+Content from: tsconfig (4).json
+================================================================================
+
+{
+  "extends": "astro/tsconfigs/strict",
+  "include": [".astro/types.d.ts", "**/*"],
+  "exclude": ["dist"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
+  }
+}
+
+
+================================================================================
+Content from: tsconfig (5).json
+================================================================================
+
+{
+	"include": [
+		"worker-configuration.d.ts",
+		"env.d.ts",
+		"**/*.ts",
+		"**/*.tsx",
+		"**/.server/**/*.ts",
+		"**/.server/**/*.tsx",
+		"**/.client/**/*.ts",
+		"**/.client/**/*.tsx"
+	],
+	"compilerOptions": {
+		"lib": ["DOM", "DOM.Iterable", "ES2022"],
+		"types": [
+			"@remix-run/cloudflare",
+			"@cloudflare/workers-types",
+			"vite/client"
+		],
+		"isolatedModules": true,
+		"esModuleInterop": true,
+		"jsx": "react-jsx",
+		"moduleResolution": "Bundler",
+		"resolveJsonModule": true,
+		"target": "ES2022",
+		"strict": true,
+		"allowJs": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"baseUrl": ".",
+		"paths": {
+			"~/*": ["./app/*"]
+		},
+
+		// Remix takes care of building everything in `remix build`.
+		"noEmit": true
+	}
+}
+
+
+================================================================================
+Content from: tsconfig (6).json
+================================================================================
+
+{
+	"files": [],
+	"references": [
+		{ "path": "./tsconfig.node.json" },
+		{ "path": "./tsconfig.cloudflare.json" }
+	],
+	"compilerOptions": {
+		"checkJs": true,
+		"verbatimModuleSyntax": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"noEmit": true
+	}
+}
+
+
+================================================================================
+Content from: tsconfig (7).json
+================================================================================
+
+{
+	"files": [],
+	"references": [
+		{ "path": "./tsconfig.node.json" },
+		{ "path": "./tsconfig.cloudflare.json" }
+	],
+	"compilerOptions": {
+		"checkJs": true,
+		"verbatimModuleSyntax": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"noEmit": true
+	}
+}
+
+
+================================================================================
+Content from: tsconfig (8).json
+================================================================================
+
+{
+	"files": [],
+	"references": [
+		{ "path": "./tsconfig.node.json" },
+		{ "path": "./tsconfig.cloudflare.json" }
+	],
+	"compilerOptions": {
+		"checkJs": true,
+		"verbatimModuleSyntax": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"noEmit": true,
+		"types": ["@cloudflare/workers-types/2023-07-01"]
+	}
+}
+
+
+================================================================================
+Content from: tsconfig (9).json
+================================================================================
+
+{
+	"files": [],
+	"references": [
+		{ "path": "./tsconfig.node.json" },
+		{ "path": "./tsconfig.cloudflare.json" }
+	],
+	"compilerOptions": {
+		"checkJs": true,
+		"verbatimModuleSyntax": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"noEmit": true
+	}
+}
+
+
+================================================================================
+Content from: tsconfig (10).json
+================================================================================
+
+{
+	"compilerOptions": {
+		"target": "esnext",
+		"lib": ["esnext"],
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"types": ["./worker-configuration.d.ts"],
+		"noEmit": true,
+		"isolatedModules": true,
+		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true,
+		"strict": false
+	},
+	"include": ["src"]
+}
+
+
+================================================================================
+Content from: tsconfig (11).json
+================================================================================
+
+{
+	"compilerOptions": {
+		/* Visit https://aka.ms/tsconfig.json to read more about this file */
+
+		/* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
+		"target": "es2021",
+		/* Specify a set of bundled library declaration files that describe the target runtime environment. */
+		"lib": ["es2021"],
+		/* Specify what JSX code is generated. */
+		"jsx": "react-jsx",
+
+		/* Specify what module code is generated. */
+		"module": "es2022",
+		/* Specify how TypeScript looks up a file from a given module specifier. */
+		"moduleResolution": "Bundler",
+		/* Enable importing .json files */
+		"resolveJsonModule": true,
+
+		/* Allow JavaScript files to be a part of your program. Use the `checkJS` option to get errors from these files. */
+		"allowJs": true,
+		/* Enable error reporting in type-checked JavaScript files. */
+		"checkJs": false,
+
+		/* Disable emitting files from a compilation. */
+		"noEmit": true,
+
+		/* Ensure that each file can be safely transpiled without relying on other imports. */
+		"isolatedModules": true,
+		/* Allow 'import x from y' when a module doesn't have a default export. */
+		"allowSyntheticDefaultImports": true,
+		/* Ensure that casing is correct in imports. */
+		"forceConsistentCasingInFileNames": true,
+
+		/* Enable all strict type-checking options. */
+		"strict": true,
+
+		/* Skip type checking all .d.ts files. */
+		"skipLibCheck": true
+	},
+	"exclude": ["test"],
+	"include": ["worker-configuration.d.ts", "src/**/*.ts"]
+}
+
+
+================================================================================
+Content from: tsconfig (12).json
+================================================================================
+
+{
+	"compilerOptions": {
+		"target": "esnext",
+		"lib": ["esnext"],
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"types": ["./worker-configuration.d.ts"],
+		"noEmit": true,
+		"isolatedModules": true,
+		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true,
+		"strict": true
+	},
+	"include": ["src"]
+}
+
+
+================================================================================
+Content from: tsconfig (13).json
+================================================================================
+
+{
+	"compilerOptions": {
+		/* Visit https://aka.ms/tsconfig.json to read more about this file */
+
+		/* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
+		"target": "es2021",
+		/* Specify a set of bundled library declaration files that describe the target runtime environment. */
+		"lib": ["es2021"],
+		/* Specify what JSX code is generated. */
+		"jsx": "react-jsx",
+
+		/* Specify what module code is generated. */
+		"module": "es2022",
+		/* Specify how TypeScript looks up a file from a given module specifier. */
+		"moduleResolution": "Bundler",
+		/* Specify type package names to be included without being referenced in a source file. */
+		/* Enable importing .json files */
+		"resolveJsonModule": true,
+
+		/* Allow JavaScript files to be a part of your program. Use the `checkJS` option to get errors from these files. */
+		"allowJs": true,
+		/* Enable error reporting in type-checked JavaScript files. */
+		"checkJs": false,
+
+		/* Disable emitting files from a compilation. */
+		"noEmit": true,
+
+		/* Ensure that each file can be safely transpiled without relying on other imports. */
+		"isolatedModules": true,
+		/* Allow 'import x from y' when a module doesn't have a default export. */
+		"allowSyntheticDefaultImports": true,
+		/* Ensure that casing is correct in imports. */
+		"forceConsistentCasingInFileNames": true,
+
+		/* Enable all strict type-checking options. */
+		"strict": true,
+
+		/* Skip type checking all .d.ts files. */
+		"skipLibCheck": true
+	},
+	"exclude": ["test"],
+	"include": ["worker-configuration.d.ts", "src/**/*.ts"]
+}
+
+
+================================================================================
+Content from: tsconfig (14).json
+================================================================================
+
+{
+	"compilerOptions": {
+		/* Visit https://aka.ms/tsconfig.json to read more about this file */
+
+		/* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
+		"target": "es2021",
+		/* Specify a set of bundled library declaration files that describe the target runtime environment. */
+		"lib": ["es2021"],
+		/* Specify what JSX code is generated. */
+		"jsx": "react-jsx",
+
+		/* Specify what module code is generated. */
+		"module": "es2022",
+		/* Specify how TypeScript looks up a file from a given module specifier. */
+		"moduleResolution": "Bundler",
+		/* Specify type package names to be included without being referenced in a source file. */
+		"types": ["./worker-configuration.d.ts"],
+		/* Enable importing .json files */
+		"resolveJsonModule": true,
+
+		/* Allow JavaScript files to be a part of your program. Use the `checkJS` option to get errors from these files. */
+		"allowJs": true,
+		/* Enable error reporting in type-checked JavaScript files. */
+		"checkJs": false,
+
+		/* Disable emitting files from a compilation. */
+		"noEmit": true,
+
+		/* Ensure that each file can be safely transpiled without relying on other imports. */
+		"isolatedModules": true,
+		/* Allow 'import x from y' when a module doesn't have a default export. */
+		"allowSyntheticDefaultImports": true,
+		/* Ensure that casing is correct in imports. */
+		"forceConsistentCasingInFileNames": true,
+
+		/* Enable all strict type-checking options. */
+		"strict": true,
+
+		/* Skip type checking all .d.ts files. */
+		"skipLibCheck": true
+	},
+	"exclude": ["test"],
+	"include": ["worker-configuration.d.ts", "src/**/*.ts"]
+}
+
+
+================================================================================
+Content from: tsconfig (15).json
+================================================================================
+
+{
+	"compilerOptions": {
+		"target": "ES2017",
+		"lib": ["dom", "dom.iterable", "esnext"],
+		"allowJs": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"noEmit": true,
+		"esModuleInterop": true,
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"resolveJsonModule": true,
+		"isolatedModules": true,
+		"jsx": "preserve",
+		"incremental": true,
+		"plugins": [
+			{
+				"name": "next"
+			}
+		],
+		"paths": {
+			"@/*": ["./src/*"]
+		},
+		"types": ["./env.d.ts", "node"]
+	},
+	"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+	"exclude": ["node_modules"]
+}
+
+
+================================================================================
+Content from: tsconfig (16).json
+================================================================================
+
+{
+	"compilerOptions": {
+		/* Visit https://aka.ms/tsconfig.json to read more about this file */
+
+		/* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
+		"target": "es2021",
+		/* Specify a set of bundled library declaration files that describe the target runtime environment. */
+		"lib": ["es2021"],
+		/* Specify what JSX code is generated. */
+		"jsx": "react-jsx",
+
+		/* Specify what module code is generated. */
+		"module": "es2022",
+		/* Specify how TypeScript looks up a file from a given module specifier. */
+		"moduleResolution": "Bundler",
+		/* Specify type package names to be included without being referenced in a source file. */
+		/* Enable importing .json files */
+		"resolveJsonModule": true,
+
+		/* Allow JavaScript files to be a part of your program. Use the `checkJS` option to get errors from these files. */
+		"allowJs": true,
+		/* Enable error reporting in type-checked JavaScript files. */
+		"checkJs": false,
+
+		/* Disable emitting files from a compilation. */
+		"noEmit": true,
+
+		/* Ensure that each file can be safely transpiled without relying on other imports. */
+		"isolatedModules": true,
+		/* Allow 'import x from y' when a module doesn't have a default export. */
+		"allowSyntheticDefaultImports": true,
+		/* Ensure that casing is correct in imports. */
+		"forceConsistentCasingInFileNames": true,
+
+		/* Enable all strict type-checking options. */
+		"strict": true,
+
+		/* Skip type checking all .d.ts files. */
+		"skipLibCheck": true
+	},
+	"exclude": ["test"],
+	"include": ["worker-configuration.d.ts", "src/**/*.ts"]
+}
+
+
+================================================================================
+Content from: tsconfig (17).json
+================================================================================
+
+{
+	"compilerOptions": {
+		"target": "esnext",
+		"lib": ["esnext"],
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"noEmit": true,
+		"isolatedModules": true,
+		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true,
+		"strict": true
+	},
+	"include": ["src/shared.ts"]
+}
+
+
+================================================================================
+Content from: tsconfig (18).json
+================================================================================
+
+{
+	"compilerOptions": {
+		/* Visit https://aka.ms/tsconfig.json to read more about this file */
+
+		/* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
+		"target": "es2021",
+		/* Specify a set of bundled library declaration files that describe the target runtime environment. */
+		"lib": ["es2021"],
+		/* Specify what JSX code is generated. */
+		"jsx": "react-jsx",
+
+		/* Specify what module code is generated. */
+		"module": "es2022",
+		/* Specify how TypeScript looks up a file from a given module specifier. */
+		"moduleResolution": "Bundler",
+		/* Enable importing .json files */
+		"resolveJsonModule": true,
+
+		/* Allow JavaScript files to be a part of your program. Use the `checkJS` option to get errors from these files. */
+		"allowJs": true,
+		/* Enable error reporting in type-checked JavaScript files. */
+		"checkJs": false,
+
+		/* Disable emitting files from a compilation. */
+		"noEmit": true,
+
+		/* Ensure that each file can be safely transpiled without relying on other imports. */
+		"isolatedModules": true,
+		/* Allow 'import x from y' when a module doesn't have a default export. */
+		"allowSyntheticDefaultImports": true,
+		/* Ensure that casing is correct in imports. */
+		"forceConsistentCasingInFileNames": true,
+
+		/* Enable all strict type-checking options. */
+		"strict": true,
+
+		/* Skip type checking all .d.ts files. */
+		"skipLibCheck": true,
+		"types": ["./worker-configuration.d.ts", "node"]
+	},
+	"exclude": ["test"],
+	"include": ["worker-configuration.d.ts", "src/**/*.ts"]
+}
+
+
+================================================================================
+Content from: tsconfig (19).json
+================================================================================
+
+{
+	"compilerOptions": {
+		/* Visit https://aka.ms/tsconfig.json to read more about this file */
+
+		/* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
+		"target": "es2021",
+		/* Specify a set of bundled library declaration files that describe the target runtime environment. */
+		"lib": ["es2021"],
+		/* Specify what JSX code is generated. */
+		"jsx": "react-jsx",
+
+		/* Specify what module code is generated. */
+		"module": "es2022",
+		/* Specify how TypeScript looks up a file from a given module specifier. */
+		"moduleResolution": "node",
+		/* Enable importing .json files */
+		"resolveJsonModule": true,
+
+		/* Allow JavaScript files to be a part of your program. Use the `checkJS` option to get errors from these files. */
+		"allowJs": true,
+		/* Enable error reporting in type-checked JavaScript files. */
+		"checkJs": false,
+
+		/* Disable emitting files from a compilation. */
+		"noEmit": true,
+
+		/* Ensure that each file can be safely transpiled without relying on other imports. */
+		"isolatedModules": true,
+		/* Allow 'import x from y' when a module doesn't have a default export. */
+		"allowSyntheticDefaultImports": true,
+		/* Ensure that casing is correct in imports. */
+		"forceConsistentCasingInFileNames": true,
+
+		/* Enable all strict type-checking options. */
+		"strict": true,
+
+		/* Skip type checking all .d.ts files. */
+		"skipLibCheck": true
+	}
+}
+
+
+================================================================================
+Content from: tsconfig (20).json
+================================================================================
+
+{
+	"compilerOptions": {
+		"target": "esnext",
+		"lib": ["esnext"],
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"noEmit": true,
+		"isolatedModules": true,
+		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true,
+		"strict": true
+	},
+	"include": ["src/shared.ts"]
+}
+
+
+================================================================================
+Content from: tsconfig (21).json
+================================================================================
+
+{
+	"compilerOptions": {
+		"target": "esnext",
+		"lib": ["esnext"],
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"types": ["./worker-configuration.d.ts"],
+		"noEmit": true,
+		"isolatedModules": true,
+		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true,
+		"strict": true
+	},
+	"include": ["src"]
+}
+
+
+================================================================================
+Content from: tsconfig (22).json
+================================================================================
+
+{
+	"compilerOptions": {
+		/* Visit https://aka.ms/tsconfig.json to read more about this file */
+
+		/* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
+		"target": "es2021",
+		/* Specify a set of bundled library declaration files that describe the target runtime environment. */
+		"lib": ["es2021"],
+		/* Specify what JSX code is generated. */
+		"jsx": "react-jsx",
+
+		/* Specify what module code is generated. */
+		"module": "es2022",
+		/* Specify how TypeScript looks up a file from a given module specifier. */
+		"moduleResolution": "Bundler",
+		/* Specify type package names to be included without being referenced in a source file. */
+		"types": [],
+		/* Enable importing .json files */
+		"resolveJsonModule": true,
+
+		/* Allow JavaScript files to be a part of your program. Use the `checkJS` option to get errors from these files. */
+		"allowJs": true,
+		/* Enable error reporting in type-checked JavaScript files. */
+		"checkJs": false,
+
+		/* Disable emitting files from a compilation. */
+		"noEmit": true,
+
+		/* Ensure that each file can be safely transpiled without relying on other imports. */
+		"isolatedModules": true,
+		/* Allow 'import x from y' when a module doesn't have a default export. */
+		"allowSyntheticDefaultImports": true,
+		/* Ensure that casing is correct in imports. */
+		"forceConsistentCasingInFileNames": true,
+
+		/* Enable all strict type-checking options. */
+		"strict": true,
+
+		/* Skip type checking all .d.ts files. */
+		"skipLibCheck": true
+	},
+	"exclude": ["test"],
+	"include": ["worker-configuration.d.ts", "src/**/*.ts"]
+}
+
+
+================================================================================
+Content from: tsconfig (23).json
+================================================================================
+
+{
+	"compilerOptions": {
+		/* Visit https://aka.ms/tsconfig.json to read more about this file */
+
+		/* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
+		"target": "es2021",
+		/* Specify a set of bundled library declaration files that describe the target runtime environment. */
+		"lib": ["es2021"],
+		/* Specify what JSX code is generated. */
+		"jsx": "react-jsx",
+
+		/* Specify what module code is generated. */
+		"module": "es2022",
+		/* Specify how TypeScript looks up a file from a given module specifier. */
+		"moduleResolution": "Bundler",
+		/* Specify type package names to be included without being referenced in a source file. */
+		"types": ["./worker-configuration.d.ts"],
+		/* Enable importing .json files */
+		"resolveJsonModule": true,
+
+		/* Allow JavaScript files to be a part of your program. Use the `checkJS` option to get errors from these files. */
+		"allowJs": true,
+		/* Enable error reporting in type-checked JavaScript files. */
+		"checkJs": false,
+
+		/* Disable emitting files from a compilation. */
+		"noEmit": true,
+
+		/* Ensure that each file can be safely transpiled without relying on other imports. */
+		"isolatedModules": true,
+		/* Allow 'import x from y' when a module doesn't have a default export. */
+		"allowSyntheticDefaultImports": true,
+		/* Ensure that casing is correct in imports. */
+		"forceConsistentCasingInFileNames": true,
+
+		/* Enable all strict type-checking options. */
+		"strict": true,
+
+		/* Skip type checking all .d.ts files. */
+		"skipLibCheck": true
+	},
+	"exclude": ["test"],
+	"include": ["worker-configuration.d.ts", "src/**/*.ts"]
+}
+
+
+================================================================================
+Content from: tsconfig (24).json
+================================================================================
+
+{
+	"compilerOptions": {
+		"rootDir": "src",
+		"outDir": "dist",
+		"target": "esnext",
+		"lib": ["esnext"],
+		"module": "commonjs",
+		"moduleResolution": "node",
+		"types": ["@types/node"],
+		"isolatedModules": true,
+		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"sourceMap": true,
+		"esModuleInterop": true
+	},
+	"include": ["src"]
+}
+
+
+================================================================================
+Content from: tsconfig (25).json
+================================================================================
+
+{
+	"compilerOptions": {
+		"target": "esnext",
+		"lib": ["esnext"],
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"types": ["@types/node", "./worker-configuration.d.ts"],
+		"noEmit": true,
+		"isolatedModules": true,
+		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true,
+		"strict": true
+	},
+	"include": ["src"]
+}
+
+
+================================================================================
+Content from: tsconfig (26).json
+================================================================================
+
+{
+	"extends": "astro/tsconfigs/strict",
+	"include": [".astro/types.d.ts", "**/*"],
+	"exclude": ["dist"],
+	"compilerOptions": {
+		"strictNullChecks": true
+	}
+}

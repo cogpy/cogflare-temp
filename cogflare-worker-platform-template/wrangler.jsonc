@@ -1,0 +1,515 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "worker-publisher-template",
+	"main": "./src/index.ts",
+	"compatibility_date": "2025-10-08",
+	"upload_source_maps": true,
+	"dispatch_namespaces": [
+		{
+			"binding": "DISPATCHER",
+			"namespace": "my-dispatch-namespace",
+			"experimental_remote": true
+		}
+	],
+	"observability": {
+		"enabled": true
+	},
+	"vars": {
+		"CLOUDFLARE_ACCOUNT_ID": "",
+		"READONLY": "true"
+	}
+}
+
+
+================================================================================
+Content from: wrangler (2).jsonc
+================================================================================
+
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "to-do-list-kv-template",
+	"compatibility_date": "2025-10-08",
+	"upload_source_maps": true,
+	"main": "./server.ts",
+	"assets": {
+		"directory": "./build/client"
+	},
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": {
+		"enabled": true
+	},
+	"kv_namespaces": [
+		{
+			"binding": "TO_DO_LIST",
+			"id": "cf8aa41453dc4be09ff86530895773e1"
+		}
+	]
+}
+
+
+================================================================================
+Content from: wrangler (3).jsonc
+================================================================================
+
+{
+  "name": "saas-admin-template",
+  "main": "./dist/index.js",
+  "assets": {
+    "directory": "./dist"
+  },
+  "compatibility_date": "2025-10-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "upload_source_maps": true,
+  "vars": {
+    "EXAMPLE_VALUE": "example_value"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "admin-db",
+      "database_id": "3009feae-2321-421c-97e8-181886710aa0"
+    }
+  ],
+  "workflows": [
+    {
+      "name": "saas-admin-template-customer-workflow",
+      "binding": "CUSTOMER_WORKFLOW",
+      "class_name": "CustomerWorkflow"
+    }
+  ]
+}
+
+
+================================================================================
+Content from: wrangler (4).jsonc
+================================================================================
+
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "react-router-postgres-ssr-template",
+	"compatibility_date": "2025-10-08",
+	"main": "./api/index.js",
+	"compatibility_flags": ["nodejs_compat"],
+	"assets": {},
+	// "hyperdrive": [
+	//   {
+	//     "binding": "HYPERDRIVE",
+	//     "id": "YOUR_HYPERDRIVE_ID",
+	//     "localConnectionString": "postgresql://myuser:mypassword@localhost:5432/mydatabase"
+	//   }
+	// ],
+	"services": [
+		{
+			"binding": "BOOKS_SERVICE",
+			"service": "react-router-postgres-ssr-template",
+			"entrypoint": "BooksService"
+		}
+	],
+	"placement": {
+		"mode": "smart"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true
+}
+
+
+================================================================================
+Content from: wrangler (5).jsonc
+================================================================================
+
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */ {
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "react-router-hono-fullstack-template",
+	"compatibility_date": "2025-10-08",
+	"main": "./workers/app.ts",
+	"vars": {
+		"VALUE_FROM_CLOUDFLARE": "Hello from Hono/CF"
+	},
+	"observability": {
+		"enabled": true
+	},
+	/**
+	 * Smart Placement
+	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
+	 */
+	// "placement": { "mode": "smart" },
+	/**
+	 * Bindings
+	 * Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
+	 * databases, object storage, AI inference, real-time communication and more.
+	 * https://developers.cloudflare.com/workers/runtime-apis/bindings/
+	 */
+	/**
+	 * Environment Variables
+	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
+	 */
+	// "vars": { "MY_VARIABLE": "production_value" },
+	/**
+	 * Note: Use secrets to store sensitive data.
+	 * https://developers.cloudflare.com/workers/configuration/secrets/
+	 */
+	/**
+	 * Static Assets
+	 * https://developers.cloudflare.com/workers/static-assets/binding/
+	 */
+	// "assets": { "directory": "./public/", "binding": "ASSETS" },
+	/**
+	 * Service Bindings (communicate between multiple Workers)
+	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
+	 */
+	// "services": [{ "binding": "MY_SERVICE", "service": "my-service" }]
+	"upload_source_maps": true
+}
+
+
+================================================================================
+Content from: wrangler (6).jsonc
+================================================================================
+
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */ {
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "react-postgres-fullstack-template",
+	"main": "api/index.js",
+	"compatibility_flags": ["nodejs_compat"],
+	"compatibility_date": "2025-10-08",
+	"observability": {
+		"enabled": true
+	},
+	"assets": {
+		"binding": "ASSETS",
+		"not_found_handling": "single-page-application"
+	},
+	// Hyperdrive binding is optional - if not provided, app will use mock data
+	// To enable Hyperdrive, uncomment and configure properly:
+	/*
+    "hyperdrive": [
+      {
+        "binding": "HYPERDRIVE",
+        "id": "YOUR_HYPERDRIVE_ID",
+        "localConnectionString": "postgresql://myuser:mypassword@localhost:5432/mydatabase"
+      }
+    ],
+    */
+	"placement": {
+		"mode": "smart"
+	},
+	"upload_source_maps": true
+}
+
+
+================================================================================
+Content from: wrangler (7).jsonc
+================================================================================
+
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */ {
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "postgres-hyperdrive-template",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-10-08",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": {
+		"enabled": true
+	},
+	"hyperdrive": [
+		{
+			"binding": "HYPERDRIVE",
+			"id": "7853460cd9194ddb864cc211f3fc6e68",
+			"localConnectionString": "postgresql://postgres:postgres@localhost:5432/defaultdb" // Replace with your connection string
+		}
+	],
+	"assets": {
+		"directory": "public",
+		"binding": "ASSETS"
+	},
+	/**
+	 * Smart Placement
+	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
+	 */
+	// "placement": { "mode": "smart" },
+	/**
+	 * Bindings
+	 * Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
+	 * databases, object storage, AI inference, real-time communication and more.
+	 * https://developers.cloudflare.com/workers/runtime-apis/bindings/
+	 */
+	/**
+	 * Environment Variables
+	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
+	 */
+	// "vars": { "MY_VARIABLE": "production_value" },
+	/**
+	 * Note: Use secrets to store sensitive data.
+	 * https://developers.cloudflare.com/workers/configuration/secrets/
+	 */
+	/**
+	 * Static Assets
+	 * https://developers.cloudflare.com/workers/static-assets/binding/
+	 */
+	// "assets": { "directory": "./public/", "binding": "ASSETS" },
+	/**
+	 * Service Bindings (communicate between multiple Workers)
+	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
+	 */
+	// "services": [{ "binding": "MY_SERVICE", "service": "my-service" }]
+	"upload_source_maps": true
+}
+
+
+================================================================================
+Content from: wrangler (8).jsonc
+================================================================================
+
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "nodejs-http-server-template",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-10-08",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true
+}
+
+
+================================================================================
+Content from: wrangler (9).jsonc
+================================================================================
+
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "nlweb-template",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-10-08",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": {
+		"enabled": true
+	},
+	"assets": {
+		"directory": "./public",
+		"binding": "ASSETS",
+		"run_worker_first": true
+	},
+	"vars": {
+		"RAG_ID": "my-autorag-id"
+	},
+	"ai": {
+		"binding": "AI"
+	},
+	"unsafe": {
+		"bindings": [
+			{
+				"name": "RATE_LIMITER",
+				"type": "ratelimit",
+				"namespace_id": "100",
+				"simple": {
+					"limit": 15,
+					"period": 60
+				}
+			}
+		]
+	},
+	"migrations": [
+		{
+			"new_sqlite_classes": ["NLWebMcp"],
+			"tag": "v1"
+		}
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"class_name": "NLWebMcp",
+				"name": "MCP_OBJECT"
+			}
+		]
+	},
+	"upload_source_maps": true
+}
+
+
+================================================================================
+Content from: wrangler (10).jsonc
+================================================================================
+
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */ {
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "next-starter-template",
+	"main": ".open-next/worker.js",
+	"compatibility_date": "2025-10-08",
+	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".open-next/assets"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true
+}
+
+
+================================================================================
+Content from: wrangler (11).jsonc
+================================================================================
+
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "mysql-hyperdrive-template",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-10-08",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": {
+		"enabled": true
+	},
+	"hyperdrive": [
+		{
+			"binding": "HYPERDRIVE",
+			"id": "7668c461af3c47969772c19cbd988391",
+			"localConnectionString": "mysql://username:password@mysql-domain.com:3306/defaultdb" // Replace with your connection string
+		}
+	],
+	"assets": {
+		"directory": "public",
+		"binding": "ASSETS"
+	},
+	"upload_source_maps": true
+}
+
+
+================================================================================
+Content from: wrangler (12).jsonc
+================================================================================
+
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */ {
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "llm-chat-app-template",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-10-08",
+	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+	"assets": {
+		"binding": "ASSETS",
+		"directory": "./public"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"ai": {
+		"binding": "AI"
+	},
+	"upload_source_maps": true
+}
+
+
+================================================================================
+Content from: wrangler (13).jsonc
+================================================================================
+
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */ {
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "d1-starter-sessions-api-template",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-10-08",
+	"observability": {
+		"enabled": true
+	},
+	"assets": {
+		"directory": "./public/"
+	},
+	/**
+	 * Bindings
+	 * Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
+	 * databases, object storage, AI inference, real-time communication and more.
+	 * https://developers.cloudflare.com/workers/runtime-apis/bindings/
+	 */
+	"d1_databases": [
+		{
+			"binding": "DB01",
+			"database_name": "d1-starter-sessions-api",
+			"database_id": "3690f364-3425-4fab-8eb7-c74c5717578a"
+		}
+	],
+	"upload_source_maps": true
+}
+
+
+================================================================================
+Content from: wrangler (14).jsonc
+================================================================================
+
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "containers-template",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-10-08",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": {
+		"enabled": true
+	},
+	"containers": [
+		{
+			"class_name": "MyContainer",
+			"image": "./Dockerfile",
+			"max_instances": 10
+		}
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"class_name": "MyContainer",
+				"name": "MY_CONTAINER"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"new_sqlite_classes": ["MyContainer"],
+			"tag": "v1"
+		}
+	],
+	"upload_source_maps": true
+}
+
+
+================================================================================
+Content from: wrangler (15).jsonc
+================================================================================
+
+{
+	"compatibility_date": "2025-10-08",
+	"main": "src/index.ts",
+	"name": "chanfana-openapi-template",
+	"upload_source_maps": true,
+	"observability": {
+		"enabled": true
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "openapi-template-db",
+			"database_id": "18d141d5-062d-46a0-a92a-bade3f8c4b00"
+		}
+	]
+}

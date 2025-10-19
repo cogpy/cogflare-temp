@@ -1,0 +1,100 @@
+{
+	"compilerOptions": {
+		"tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+		"target": "ES2022",
+		"lib": ["ES2023"],
+		"module": "ESNext",
+		"skipLibCheck": true,
+
+		/* Bundler mode */
+		"moduleResolution": "bundler",
+		"allowImportingTsExtensions": true,
+		"isolatedModules": true,
+		"moduleDetection": "force",
+		"noEmit": true,
+
+		/* Linting */
+		"strict": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUncheckedSideEffectImports": true
+	},
+	"include": ["vite.config.ts"]
+}
+
+
+================================================================================
+Content from: tsconfig.node (2).json
+================================================================================
+
+{
+	"extends": "./tsconfig.json",
+	"include": ["tailwind.config.ts", "vite.config.ts"],
+	"compilerOptions": {
+		"composite": true,
+		"strict": true,
+		"types": ["node"],
+		"lib": ["ES2022"],
+		"target": "ES2022",
+		"module": "ES2022",
+		"moduleResolution": "bundler"
+	}
+}
+
+
+================================================================================
+Content from: tsconfig.node (3).json
+================================================================================
+
+{
+	"extends": "./tsconfig.json",
+	"include": ["tailwind.config.ts", "vite.config.ts"],
+	"compilerOptions": {
+		"composite": true,
+		"strict": true,
+		"types": ["node"],
+		"lib": ["ES2022"],
+		"target": "ES2022",
+		"module": "ES2022",
+		"moduleResolution": "bundler"
+	}
+}
+
+
+================================================================================
+Content from: tsconfig.node (4).json
+================================================================================
+
+{
+	"extends": "./tsconfig.json",
+	"include": ["tailwind.config.ts", "vite.config.ts"],
+	"compilerOptions": {
+		"composite": true,
+		"strict": true,
+		"types": ["node"],
+		"lib": ["ES2022"],
+		"target": "ES2022",
+		"module": "ES2022",
+		"moduleResolution": "bundler"
+	}
+}
+
+
+================================================================================
+Content from: tsconfig.node (5).json
+================================================================================
+
+{
+	"extends": "./tsconfig.json",
+	"include": ["tailwind.config.ts", "vite.config.ts"],
+	"compilerOptions": {
+		"composite": true,
+		"strict": true,
+		"types": ["node"],
+		"lib": ["ES2022"],
+		"target": "ES2022",
+		"module": "ES2022",
+		"moduleResolution": "bundler"
+	}
+}
