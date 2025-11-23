@@ -576,7 +576,7 @@ export class MindAgent extends DurableObject<Env> {
 			}
 
 			if (request.method === "POST" && path === "/goal") {
-				const goalData = await request.json();
+				const goalData = await request.json() as Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>;
 				const goal = await this.createGoal(goalData);
 				return Response.json({ 
 					success: true, 

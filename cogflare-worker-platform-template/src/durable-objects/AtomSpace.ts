@@ -74,11 +74,11 @@ export class AtomSpace extends DurableObject<Env> {
 		const av = attentionValue || { sti: 0, lti: 0, vlti: 0 };
 
 		// Check if node with same type and name already exists
-		const existing = await this.ctx.storage.sql.query(`
+		const existing = this.ctx.storage.sql.exec(`
 			SELECT id FROM atoms WHERE type = ? AND name = ?
-		`, type, name);
+		`, type, name).toArray();
 
-		if (existing.results.length > 0) {
+		if (existing.length > 0) {
 			throw new Error(`Node with type ${type} and name ${name} already exists`);
 		}
 
@@ -114,11 +114,11 @@ export class AtomSpace extends DurableObject<Env> {
 
 		// Verify all outgoing atoms exist
 		const placeholders = outgoing.map(() => '?').join(',');
-		const existingAtoms = await this.ctx.storage.sql.query(`
+		const existingAtoms = this.ctx.storage.sql.exec(`
 			SELECT id FROM atoms WHERE id IN (${placeholders})
-		`, ...outgoing);
+		`, ...outgoing).toArray();
 
-		if (existingAtoms.results.length !== outgoing.length) {
+		if (existingAtoms.length !== outgoing.length) {
 			throw new Error("One or more outgoing atoms do not exist");
 		}
 
@@ -158,19 +158,30 @@ export class AtomSpace extends DurableObject<Env> {
 	 * Get an atom by ID
 	 */
 	async getAtom(id: string): Promise<Atom | null> {
-		const result = await this.ctx.storage.sql.query(`
+		const result = this.ctx.storage.sql.exec<{
+			id: string;
+			type: string;
+			name: string | null;
+			truth_strength: number;
+			truth_confidence: number;
+			sti: number;
+			lti: number;
+			vlti: number;
+			created_at: number;
+			updated_at: number;
+		}>(`
 			SELECT * FROM atoms WHERE id = ?
-		`, id);
+		`, id).toArray();
 
-		if (result.results.length === 0) {
+		if (result.length === 0) {
 			return null;
 		}
 
-		const row = result.results[0] as any;
+		const row = result[0];
 		const atom: Atom = {
 			id: row.id,
-			type: row.type,
-			name: row.name,
+			type: row.type as AtomType,
+			name: row.name || undefined,
 			truthValue: {
 				strength: row.truth_strength,
 				confidence: row.truth_confidence
@@ -186,11 +197,11 @@ export class AtomSpace extends DurableObject<Env> {
 
 		// If it's a link, get the outgoing atoms
 		if (this.isLinkType(atom.type)) {
-			const linkResult = await this.ctx.storage.sql.query(`
+			const linkResult = this.ctx.storage.sql.exec<{ target_id: string }>(`
 				SELECT target_id FROM links WHERE link_id = ? ORDER BY position
-			`, id);
+			`, id).toArray();
 			
-			(atom as Link).outgoing = linkResult.results.map((row: any) => row.target_id);
+			(atom as Link).outgoing = linkResult.map((row) => row.target_id);
 		}
 
 		return atom;
@@ -235,15 +246,25 @@ export class AtomSpace extends DurableObject<Env> {
 			params.push(query.offset);
 		}
 
-		const result = await this.ctx.storage.sql.query(sql, ...params);
+		const result = this.ctx.storage.sql.exec<{
+			id: string;
+			type: string;
+			name: string | null;
+			truth_strength: number;
+			truth_confidence: number;
+			sti: number;
+			lti: number;
+			vlti: number;
+			created_at: number;
+			updated_at: number;
+		}>(sql, ...params).toArray();
 		
 		const atoms: Atom[] = [];
-		for (const row of result.results) {
-			const atomRow = row as any;
+		for (const atomRow of result) {
 			const atom: Atom = {
 				id: atomRow.id,
-				type: atomRow.type,
-				name: atomRow.name,
+				type: atomRow.type as AtomType,
+				name: atomRow.name || undefined,
 				truthValue: {
 					strength: atomRow.truth_strength,
 					confidence: atomRow.truth_confidence
@@ -259,11 +280,11 @@ export class AtomSpace extends DurableObject<Env> {
 
 			// If it's a link, get the outgoing atoms
 			if (this.isLinkType(atom.type)) {
-				const linkResult = await this.ctx.storage.sql.query(`
+				const linkResult = this.ctx.storage.sql.exec<{ target_id: string }>(`
 					SELECT target_id FROM links WHERE link_id = ? ORDER BY position
-				`, atom.id);
+				`, atom.id).toArray();
 				
-				(atom as Link).outgoing = linkResult.results.map((linkRow: any) => linkRow.target_id);
+				(atom as Link).outgoing = linkResult.map((linkRow) => linkRow.target_id);
 			}
 
 			atoms.push(atom);
@@ -276,23 +297,32 @@ export class AtomSpace extends DurableObject<Env> {
 	 * Get incoming links for an atom
 	 */
 	async getIncoming(atomId: string): Promise<Link[]> {
-		const result = await this.ctx.storage.sql.query(`
+		const result = this.ctx.storage.sql.exec<{
+			id: string;
+			type: string;
+			truth_strength: number;
+			truth_confidence: number;
+			sti: number;
+			lti: number;
+			vlti: number;
+			created_at: number;
+			updated_at: number;
+		}>(`
 			SELECT DISTINCT a.* FROM atoms a
 			INNER JOIN links l ON a.id = l.link_id
 			WHERE l.target_id = ?
-		`, atomId);
+		`, atomId).toArray();
 
 		const links: Link[] = [];
-		for (const row of result.results) {
-			const atomRow = row as any;
-			const linkResult = await this.ctx.storage.sql.query(`
+		for (const atomRow of result) {
+			const linkResult = this.ctx.storage.sql.exec<{ target_id: string }>(`
 				SELECT target_id FROM links WHERE link_id = ? ORDER BY position
-			`, atomRow.id);
+			`, atomRow.id).toArray();
 			
 			const link: Link = {
 				id: atomRow.id,
-				type: atomRow.type,
-				outgoing: linkResult.results.map((linkRow: any) => linkRow.target_id),
+				type: atomRow.type as Extract<AtomType, 'Link' | 'EvaluationLink' | 'InheritanceLink' | 'SimilarityLink' | 'ImplicationLink' | 'ListLink' | 'AndLink' | 'OrLink' | 'NotLink'>,
+				outgoing: linkResult.map((linkRow) => linkRow.target_id),
 				truthValue: {
 					strength: atomRow.truth_strength,
 					confidence: atomRow.truth_confidence
@@ -337,11 +367,11 @@ export class AtomSpace extends DurableObject<Env> {
 		params.push(Date.now());
 		params.push(id);
 
-		const result = await this.ctx.storage.sql.exec(`
+		const result = this.ctx.storage.sql.exec(`
 			UPDATE atoms SET ${updates.join(", ")} WHERE id = ?
 		`, ...params);
 
-		return result.changes > 0;
+		return result.rowsWritten > 0;
 	}
 
 	/**
@@ -349,54 +379,54 @@ export class AtomSpace extends DurableObject<Env> {
 	 */
 	async deleteAtom(id: string): Promise<boolean> {
 		// Delete all links that reference this atom
-		await this.ctx.storage.sql.exec(`
+		this.ctx.storage.sql.exec(`
 			DELETE FROM links WHERE link_id = ? OR target_id = ?
 		`, id, id);
 
 		// Delete the atom itself
-		const result = await this.ctx.storage.sql.exec(`
+		const result = this.ctx.storage.sql.exec(`
 			DELETE FROM atoms WHERE id = ?
 		`, id);
 
-		return result.changes > 0;
+		return result.rowsWritten > 0;
 	}
 
 	/**
 	 * Get AtomSpace statistics
 	 */
 	async getStatistics(): Promise<any> {
-		const totalAtoms = await this.ctx.storage.sql.query(`
+		const totalAtoms = this.ctx.storage.sql.exec<{ count: number }>(`
 			SELECT COUNT(*) as count FROM atoms
-		`);
+		`).one();
 
-		const nodeCount = await this.ctx.storage.sql.query(`
+		const nodeCount = this.ctx.storage.sql.exec<{ count: number }>(`
 			SELECT COUNT(*) as count FROM atoms WHERE type LIKE '%Node'
-		`);
+		`).one();
 
-		const linkCount = await this.ctx.storage.sql.query(`
+		const linkCount = this.ctx.storage.sql.exec<{ count: number }>(`
 			SELECT COUNT(*) as count FROM atoms WHERE type LIKE '%Link'
-		`);
+		`).one();
 
-		const avgTruthValue = await this.ctx.storage.sql.query(`
+		const avgTruthValue = this.ctx.storage.sql.exec<{ strength: number | null; confidence: number | null }>(`
 			SELECT AVG(truth_strength) as strength, AVG(truth_confidence) as confidence FROM atoms
-		`);
+		`).one();
 
-		const avgAttentionValue = await this.ctx.storage.sql.query(`
+		const avgAttentionValue = this.ctx.storage.sql.exec<{ sti: number | null; lti: number | null; vlti: number | null }>(`
 			SELECT AVG(sti) as sti, AVG(lti) as lti, AVG(vlti) as vlti FROM atoms
-		`);
+		`).one();
 
 		return {
-			totalAtoms: (totalAtoms.results[0] as any).count,
-			nodeCount: (nodeCount.results[0] as any).count,
-			linkCount: (linkCount.results[0] as any).count,
+			totalAtoms: totalAtoms.count,
+			nodeCount: nodeCount.count,
+			linkCount: linkCount.count,
 			averageTruthValue: {
-				strength: (avgTruthValue.results[0] as any).strength || 0,
-				confidence: (avgTruthValue.results[0] as any).confidence || 0
+				strength: avgTruthValue.strength || 0,
+				confidence: avgTruthValue.confidence || 0
 			},
 			averageAttentionValue: {
-				sti: (avgAttentionValue.results[0] as any).sti || 0,
-				lti: (avgAttentionValue.results[0] as any).lti || 0,
-				vlti: (avgAttentionValue.results[0] as any).vlti || 0
+				sti: avgAttentionValue.sti || 0,
+				lti: avgAttentionValue.lti || 0,
+				vlti: avgAttentionValue.vlti || 0
 			}
 		};
 	}
@@ -436,20 +466,36 @@ export class AtomSpace extends DurableObject<Env> {
 			}
 
 			if (request.method === "POST" && path === "/node") {
-				const { type, name, truthValue, attentionValue } = await request.json();
+				const body = await request.json() as { 
+					type: Extract<AtomType, 'Node' | 'ConceptNode' | 'PredicateNode' | 'VariableNode'>; 
+					name: string; 
+					truthValue?: TruthValue; 
+					attentionValue?: AttentionValue;
+				};
+				const { type, name, truthValue, attentionValue } = body;
 				const node = await this.createNode(type, name, truthValue, attentionValue);
 				return Response.json({ success: true, data: node, timestamp: Date.now() });
 			}
 
 			if (request.method === "POST" && path === "/link") {
-				const { type, outgoing, truthValue, attentionValue } = await request.json();
+				const body = await request.json() as { 
+					type: Extract<AtomType, 'Link' | 'EvaluationLink' | 'InheritanceLink' | 'SimilarityLink' | 'ImplicationLink' | 'ListLink' | 'AndLink' | 'OrLink' | 'NotLink'>; 
+					outgoing: string[]; 
+					truthValue?: TruthValue; 
+					attentionValue?: AttentionValue;
+				};
+				const { type, outgoing, truthValue, attentionValue } = body;
 				const link = await this.createLink(type, outgoing, truthValue, attentionValue);
 				return Response.json({ success: true, data: link, timestamp: Date.now() });
 			}
 
 			if (request.method === "PUT" && path.startsWith("/atom/")) {
 				const atomId = path.split("/")[2];
-				const { truthValue, attentionValue } = await request.json();
+				const body = await request.json() as { 
+					truthValue?: TruthValue; 
+					attentionValue?: AttentionValue;
+				};
+				const { truthValue, attentionValue } = body;
 				const success = await this.updateAtom(atomId, truthValue, attentionValue);
 				return Response.json({ success, timestamp: Date.now() });
 			}
