@@ -364,12 +364,22 @@
 		<script>
 			let logCounter = 0;
 
+			// Escape meta-characters in log messages to prevent XSS
+			function escapeHTML(str) {
+				return str
+					.replace(/&/g, "&amp;")
+					.replace(/</g, "&lt;")
+					.replace(/>/g, "&gt;")
+					.replace(/"/g, "&quot;")
+					.replace(/'/g, "&#39;");
+			}
+
 			function addLogEntry(message, type = "INFO") {
 				const log = document.getElementById("activity-log");
 				const timestamp = new Date().toLocaleTimeString();
 				const entry = document.createElement("div");
 				entry.className = "log-entry";
-				entry.innerHTML = `<span class="log-timestamp">[${timestamp}]</span> ${message}`;
+				entry.innerHTML = `<span class="log-timestamp">[${timestamp}]</span> ${escapeHTML(message)}`;
 				log.appendChild(entry);
 				log.scrollTop = log.scrollHeight;
 
