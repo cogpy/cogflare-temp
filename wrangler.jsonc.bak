@@ -4,6 +4,15 @@
 	"main": "./flarecog/src/index.ts",
 	"compatibility_date": "2025-10-08",
 	"compatibility_flags": ["nodejs_compat"],
+	"node_module_rules": [
+		{
+			"type": "CompiledWasm",
+			"glob": ["**/*.wasm"]
+		}
+	],
+	"resolve": {
+		"modules": ["./flarecog/node_modules", "./node_modules"]
+	},
 	"observability": {
 		"enabled": true
 	},
