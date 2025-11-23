@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "cogflare-worker-platform-template",
+  "name": "flarecog",
   "main": "./src/index.ts",
   "compatibility_date": "2025-10-08",
   "compatibility_flags": [

@@ -1,6 +1,6 @@
 {
-	"name": "cogflare-worker-platform-template",
-	"description": "OpenCog-based autonomous cogflare orchestrating agency for distributed worker cognition platform on Cloudflare Workers",
+	"name": "flarecog",
+	"description": "FlareCog - Unified OpenCog-Cloudflare cognitive architecture for advanced AGI applications at the edge",
 	"private": true,
 	"cloudflare": {
 		"label": "Cogflare OpenCog Platform",
