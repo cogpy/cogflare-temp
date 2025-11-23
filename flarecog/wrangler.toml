@@ -1,0 +1,108 @@
+# FlareCog Multi-Tenant Configuration
+# OpenCog-CloudFlare Integration Platform
+
+name = "flarecog"
+main = "workers/app.ts"
+compatibility_date = "2024-11-01"
+
+# Durable Objects
+[[durable_objects.bindings]]
+name = "ATOMSPACE"
+class_name = "AtomSpace"
+script_name = "flarecog"
+
+[[durable_objects.bindings]]
+name = "MINDAGENT"
+class_name = "MindAgent"
+script_name = "flarecog"
+
+[[durable_objects.bindings]]
+name = "STORAGE_NODE"
+class_name = "StorageNode"
+script_name = "flarecog"
+
+# Dispatch Worker for Multi-Tenancy
+[[durable_objects.bindings]]
+name = "DISPATCH"
+class_name = "DispatchWorker"
+script_name = "flarecog"
+
+# R2 Bucket for Cold Storage
+[[r2_buckets]]
+binding = "ATOMSPACE_COLD_STORAGE"
+bucket_name = "flarecog-cold-storage"
+preview_bucket_name = "flarecog-cold-storage-preview"
+
+# D1 Database for Global Coordination
+[[d1_databases]]
+binding = "COORDINATION_DB"
+database_name = "flarecog-coordination"
+database_id = "YOUR_D1_DATABASE_ID" # Replace with actual D1 database ID
+
+# Hyperdrive for Connection Pooling
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "YOUR_HYPERDRIVE_ID" # Replace with actual Hyperdrive ID
+
+# KV Namespace for Caching
+[[kv_namespaces]]
+binding = "CACHE"
+id = "YOUR_KV_NAMESPACE_ID" # Replace with actual KV namespace ID
+preview_id = "YOUR_KV_PREVIEW_ID"
+
+# Queues for Async Processing
+[[queues.producers]]
+binding = "AGENT_QUEUE"
+queue = "flarecog-agent-queue"
+
+[[queues.consumers]]
+queue = "flarecog-agent-queue"
+max_batch_size = 10
+max_batch_timeout = 30
+
+# Workers AI Binding
+[ai]
+binding = "AI"
+
+# Analytics Engine
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+
+# Environment Variables
+[vars]
+ENVIRONMENT = "production"
+LOG_LEVEL = "info"
+MAX_ATOMSPACES_PER_TENANT = "100"
+DEFAULT_ATOMSPACE_QUOTA = "10000000"
+
+# Development Environment
+[env.development]
+name = "flarecog-dev"
+vars = { ENVIRONMENT = "development", LOG_LEVEL = "debug" }
+
+[env.development.d1_databases]
+binding = "COORDINATION_DB"
+database_name = "flarecog-coordination-dev"
+database_id = "YOUR_DEV_D1_DATABASE_ID"
+
+# Staging Environment
+[env.staging]
+name = "flarecog-staging"
+vars = { ENVIRONMENT = "staging", LOG_LEVEL = "info" }
+
+[env.staging.d1_databases]
+binding = "COORDINATION_DB"
+database_name = "flarecog-coordination-staging"
+database_id = "YOUR_STAGING_D1_DATABASE_ID"
+
+# Routes
+routes = [
+  { pattern = "flarecog.com/*", zone_name = "flarecog.com" },
+  { pattern = "*.flarecog.com/*", zone_name = "flarecog.com" }
+]
+
+# Limits and Performance
+limits = { cpu_ms = 50000 }
+
+[placement]
+mode = "smart"
