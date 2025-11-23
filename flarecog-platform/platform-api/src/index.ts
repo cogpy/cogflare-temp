@@ -6,6 +6,7 @@
  */
 
 import Cloudflare from "cloudflare";
+import { toFile } from "cloudflare/index";
 
 export interface Env {
 	CLOUDFLARE_API_TOKEN: string;
@@ -75,8 +76,8 @@ async function provisionTenant(
 					],
 				},
 				files: {
-					[`${tenantId}.mjs`]: new File(
-						[userWorkerCode],
+					[`${tenantId}.mjs`]: await toFile(
+						Buffer.from(userWorkerCode),
 						`${tenantId}.mjs`,
 						{
 							type: "application/javascript+module",

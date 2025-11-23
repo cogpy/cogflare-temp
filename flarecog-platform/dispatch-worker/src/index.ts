@@ -134,10 +134,28 @@ export default {
 				response = await userWorker.fetch(modifiedRequest);
 			} catch (error) {
 				console.error(`Error forwarding to user Worker for tenant ${tenantId}:`, error);
+				
+				// Check if worker not found in dispatch namespace
+				if (error instanceof Error && error.message.startsWith("Worker not found")) {
+					return new Response(
+						JSON.stringify({
+							error: "Tenant Not Found",
+							message: `No cognitive instance found for tenant '${tenantId}'. Please provision the tenant first.`,
+							tenantId: tenantId,
+						}),
+						{
+							status: 404,
+							headers: { "Content-Type": "application/json" },
+						},
+					);
+				}
+				
+				// Other errors (service unavailable)
 				return new Response(
 					JSON.stringify({
 						error: "Service Unavailable",
 						message: "Tenant cognitive system is temporarily unavailable",
+						details: error instanceof Error ? error.message : "Unknown error",
 					}),
 					{
 						status: 503,
