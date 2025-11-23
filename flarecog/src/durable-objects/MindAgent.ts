@@ -478,19 +478,101 @@ export class MindAgent extends DurableObject<Env> {
 	}
 
 	/**
-	 * ReasoningAgent: Performs logical inference
+	 * ReasoningAgent: Performs logical inference using PLN and URE
 	 */
 	private async executeReasoningAgent(
 		agent: MindAgentConfig,
 	): Promise<MindAgentResult> {
-		// Implementation would perform pattern matching and logical inference
+		const atomSpace = this.env.ATOMSPACE.idFromName("primary");
+		const atomSpaceStub = this.env.ATOMSPACE.get(atomSpace);
+		
+		let atomsProcessed = 0;
+		let atomsCreated = 0;
+		let atomsModified = 0;
+		
+		// Find high-confidence implication links for inference
+		const query: AtomSpaceQuery = {
+			type: "find_atoms",
+			atomType: "ImplicationLink",
+			truthValueMin: { strength: 0.6, confidence: 0.5 },
+			limit: 10,
+		};
+		
+		const response = await atomSpaceStub.fetch(
+			new Request("http://dummy/query", {
+				method: "POST",
+				body: JSON.stringify(query),
+			}),
+		);
+		
+		const { data: implications } = (await response.json()) as any;
+		
+		// Perform PLN inference on found implications
+		for (const impl of implications || []) {
+			atomsProcessed++;
+			
+			// Look for chains: if we have A->B and B->C, infer A->C via deduction
+			if (impl.outgoing && impl.outgoing.length === 2) {
+				const [antecedent, consequent] = impl.outgoing;
+				
+				// Find other implications starting from consequent
+				const chainQuery: AtomSpaceQuery = {
+					type: "find_atoms",
+					atomType: "ImplicationLink",
+					limit: 5,
+				};
+				
+				const chainResponse = await atomSpaceStub.fetch(
+					new Request("http://dummy/query", {
+						method: "POST",
+						body: JSON.stringify(chainQuery),
+					}),
+				);
+				
+				const { data: chainCandidates } = (await chainResponse.json()) as any;
+				
+				// Apply deduction rule to create new inference
+				for (const candidate of chainCandidates || []) {
+					if (candidate.outgoing && candidate.outgoing[0] === consequent) {
+						// We have A->B and B->C, apply deduction
+						const newTruthValue = {
+							strength: impl.truthValue.strength * candidate.truthValue.strength,
+							confidence: impl.truthValue.confidence * candidate.truthValue.confidence * candidate.truthValue.strength,
+						};
+						
+						// Create inferred implication A->C
+						try {
+							await atomSpaceStub.fetch(
+								new Request("http://dummy/link", {
+									method: "POST",
+									body: JSON.stringify({
+										type: "ImplicationLink",
+										outgoing: [antecedent, candidate.outgoing[1]],
+										truthValue: newTruthValue,
+										attentionValue: { sti: 50, lti: 30, vlti: 5 },
+									}),
+								}),
+							);
+							atomsCreated++;
+						} catch (error) {
+							// Link might already exist, continue
+						}
+					}
+				}
+			}
+		}
+		
 		return {
 			agentId: agent.id,
 			executionTime: 0,
-			atomsProcessed: 0,
-			atomsCreated: 0,
-			atomsModified: 0,
+			atomsProcessed,
+			atomsCreated,
+			atomsModified,
 			success: true,
+			metrics: {
+				implicationsFound: implications?.length || 0,
+				inferencesCreated: atomsCreated,
+			},
 		};
 	}
 
