@@ -67,7 +67,7 @@ export class LocalStorageNode implements IStorageNode {
 			new Request(`https://atomspace/atom/${id}`, { method: "GET" })
 		);
 		if (!response.ok) return null;
-		const data = await response.json();
+		const data = await response.json() as { atom: Atom };
 		return data.atom;
 	}
 
@@ -115,7 +115,7 @@ export class LocalStorageNode implements IStorageNode {
 			})
 		);
 		if (!response.ok) return [];
-		const data = await response.json();
+		const data = await response.json() as { atoms?: Atom[] };
 		return data.atoms || [];
 	}
 
@@ -124,7 +124,7 @@ export class LocalStorageNode implements IStorageNode {
 			new Request(`https://atomspace/incoming/${atomId}`, { method: "GET" })
 		);
 		if (!response.ok) return [];
-		const data = await response.json();
+		const data = await response.json() as { links?: Link[] };
 		return data.links || [];
 	}
 
@@ -190,10 +190,10 @@ export class RemoteStorageNode implements IStorageNode {
 				method: "GET",
 			});
 
-			if (!response.ok) return null;
+		if (!response.ok) return null;
 
-			const data = await response.json();
-			const atom = data.atom;
+		const data = await response.json() as { atom: Atom };
+		const atom = data.atom;
 
 			// Update cache
 			if (this.config.cacheEnabled && atom) {
@@ -280,10 +280,10 @@ export class RemoteStorageNode implements IStorageNode {
 				body: JSON.stringify(query),
 			});
 
-			if (!response.ok) return [];
+		if (!response.ok) return [];
 
-			const data = await response.json();
-			return data.atoms || [];
+		const data = await response.json() as { atoms?: Atom[] };
+		return data.atoms || [];
 		} catch (error) {
 			console.error("RemoteStorageNode query error:", error);
 			return [];
@@ -297,10 +297,10 @@ export class RemoteStorageNode implements IStorageNode {
 				{ method: "GET" }
 			);
 
-			if (!response.ok) return [];
+		if (!response.ok) return [];
 
-			const data = await response.json();
-			return data.links || [];
+		const data = await response.json() as { links?: Link[] };
+		return data.links || [];
 		} catch (error) {
 			console.error("RemoteStorageNode getIncoming error:", error);
 			return [];
