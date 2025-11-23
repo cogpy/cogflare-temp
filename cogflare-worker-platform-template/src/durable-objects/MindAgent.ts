@@ -8,12 +8,12 @@ import {
 	Goal,
 	GoalType,
 	GoalStatus,
-	AtomSpaceQuery
+	AtomSpaceQuery,
 } from "../types/cognitive";
 
 /**
  * MindAgent Durable Object - Autonomous cognitive processing agents
- * 
+ *
  * Implements various cognitive functions that operate on the AtomSpace:
  * - ForgetAgent: Manages attention decay and memory cleanup
  * - HebbianAgent: Implements Hebbian learning patterns
@@ -24,7 +24,8 @@ import {
  */
 export class MindAgent extends DurableObject<Env> {
 	private agents: Map<string, MindAgentConfig> = new Map();
-	private executionQueue: Array<{ agentId: string; scheduledTime: number }> = [];
+	private executionQueue: Array<{ agentId: string; scheduledTime: number }> =
+		[];
 	private isRunning = false;
 	private goals: Map<string, Goal> = new Map();
 
@@ -38,11 +39,12 @@ export class MindAgent extends DurableObject<Env> {
 	 * Load agent state from storage
 	 */
 	private async loadState(): Promise<void> {
-		const agentsData = await this.ctx.storage.get<MindAgentConfig[]>("agents") || [];
-		const goalsData = await this.ctx.storage.get<Goal[]>("goals") || [];
-		
-		agentsData.forEach(agent => this.agents.set(agent.id, agent));
-		goalsData.forEach(goal => this.goals.set(goal.id, goal));
+		const agentsData =
+			(await this.ctx.storage.get<MindAgentConfig[]>("agents")) || [];
+		const goalsData = (await this.ctx.storage.get<Goal[]>("goals")) || [];
+
+		agentsData.forEach((agent) => this.agents.set(agent.id, agent));
+		goalsData.forEach((goal) => this.goals.set(goal.id, goal));
 
 		// Initialize default agents if none exist
 		if (this.agents.size === 0) {
@@ -72,8 +74,8 @@ export class MindAgent extends DurableObject<Env> {
 				enabled: true,
 				parameters: {
 					minSTI: -100,
-					decayRate: 0.1
-				}
+					decayRate: 0.1,
+				},
 			},
 			{
 				id: nanoid(),
@@ -84,8 +86,8 @@ export class MindAgent extends DurableObject<Env> {
 				enabled: true,
 				parameters: {
 					spreadFactor: 0.1,
-					maxHops: 3
-				}
+					maxHops: 3,
+				},
 			},
 			{
 				id: nanoid(),
@@ -95,8 +97,8 @@ export class MindAgent extends DurableObject<Env> {
 				priority: 3,
 				enabled: true,
 				parameters: {
-					maxConcurrentGoals: 10
-				}
+					maxConcurrentGoals: 10,
+				},
 			},
 			{
 				id: nanoid(),
@@ -107,12 +109,12 @@ export class MindAgent extends DurableObject<Env> {
 				enabled: true,
 				parameters: {
 					learningRate: 0.05,
-					threshold: 0.7
-				}
-			}
+					threshold: 0.7,
+				},
+			},
 		];
 
-		defaultAgents.forEach(agent => this.agents.set(agent.id, agent));
+		defaultAgents.forEach((agent) => this.agents.set(agent.id, agent));
 		await this.saveState();
 	}
 
@@ -121,7 +123,7 @@ export class MindAgent extends DurableObject<Env> {
 	 */
 	private startScheduler(): void {
 		if (this.isRunning) return;
-		
+
 		this.isRunning = true;
 		this.scheduleNextExecution();
 	}
@@ -131,14 +133,14 @@ export class MindAgent extends DurableObject<Env> {
 	 */
 	private scheduleNextExecution(): void {
 		const now = Date.now();
-		
+
 		// Schedule enabled agents based on their frequency
 		for (const agent of this.agents.values()) {
 			if (agent.enabled) {
 				const nextExecution = now + agent.frequency;
 				this.executionQueue.push({
 					agentId: agent.id,
-					scheduledTime: nextExecution
+					scheduledTime: nextExecution,
 				});
 			}
 		}
@@ -169,7 +171,7 @@ export class MindAgent extends DurableObject<Env> {
 			} catch (error) {
 				console.error(`Error executing agent ${next.agentId}:`, error);
 			}
-			
+
 			// Continue with next execution
 			this.executeNext();
 		}, delay);
@@ -219,7 +221,6 @@ export class MindAgent extends DurableObject<Env> {
 
 			result.executionTime = Date.now() - startTime;
 			result.success = true;
-
 		} catch (error) {
 			result = {
 				agentId,
@@ -228,7 +229,7 @@ export class MindAgent extends DurableObject<Env> {
 				atomsCreated: 0,
 				atomsModified: 0,
 				success: false,
-				error: error instanceof Error ? error.message : "Unknown error"
+				error: error instanceof Error ? error.message : "Unknown error",
 			};
 		}
 
@@ -241,7 +242,9 @@ export class MindAgent extends DurableObject<Env> {
 	/**
 	 * ForgetAgent: Manages attention decay and removes low-importance atoms
 	 */
-	private async executeForgetAgent(agent: MindAgentConfig): Promise<MindAgentResult> {
+	private async executeForgetAgent(
+		agent: MindAgentConfig,
+	): Promise<MindAgentResult> {
 		const atomSpace = this.env.ATOMSPACE.idFromName("primary");
 		const atomSpaceStub = this.env.ATOMSPACE.get(atomSpace);
 
@@ -249,40 +252,46 @@ export class MindAgent extends DurableObject<Env> {
 		const query: AtomSpaceQuery = {
 			type: "find_atoms",
 			attentionValueMin: { sti: agent.parameters.minSTI, lti: 0, vlti: 0 },
-			limit: 100
+			limit: 100,
 		};
 
-		const response = await atomSpaceStub.fetch(new Request("http://dummy/query", {
-			method: "POST",
-			body: JSON.stringify(query)
-		}));
+		const response = await atomSpaceStub.fetch(
+			new Request("http://dummy/query", {
+				method: "POST",
+				body: JSON.stringify(query),
+			}),
+		);
 
-		const { data: lowSTIAtoms } = await response.json() as any;
+		const { data: lowSTIAtoms } = (await response.json()) as any;
 		let atomsProcessed = 0;
 		let atomsModified = 0;
 
 		// Decay attention values and remove very low importance atoms
 		for (const atom of lowSTIAtoms) {
 			atomsProcessed++;
-			
+
 			const newSTI = atom.attentionValue.sti * (1 - agent.parameters.decayRate);
-			
+
 			if (newSTI < agent.parameters.minSTI * 2) {
 				// Remove atom if STI is very low
-				await atomSpaceStub.fetch(new Request(`http://dummy/atom/${atom.id}`, {
-					method: "DELETE"
-				}));
+				await atomSpaceStub.fetch(
+					new Request(`http://dummy/atom/${atom.id}`, {
+						method: "DELETE",
+					}),
+				);
 			} else {
 				// Update with decayed STI
-				await atomSpaceStub.fetch(new Request(`http://dummy/atom/${atom.id}`, {
-					method: "PUT",
-					body: JSON.stringify({
-						attentionValue: {
-							...atom.attentionValue,
-							sti: newSTI
-						}
-					})
-				}));
+				await atomSpaceStub.fetch(
+					new Request(`http://dummy/atom/${atom.id}`, {
+						method: "PUT",
+						body: JSON.stringify({
+							attentionValue: {
+								...atom.attentionValue,
+								sti: newSTI,
+							},
+						}),
+					}),
+				);
 				atomsModified++;
 			}
 		}
@@ -296,15 +305,17 @@ export class MindAgent extends DurableObject<Env> {
 			success: true,
 			metrics: {
 				decayRate: agent.parameters.decayRate,
-				atomsRemoved: atomsProcessed - atomsModified
-			}
+				atomsRemoved: atomsProcessed - atomsModified,
+			},
 		};
 	}
 
 	/**
 	 * ImportanceSpreadingAgent: Spreads attention through connected atoms
 	 */
-	private async executeImportanceSpreadingAgent(agent: MindAgentConfig): Promise<MindAgentResult> {
+	private async executeImportanceSpreadingAgent(
+		agent: MindAgentConfig,
+	): Promise<MindAgentResult> {
 		const atomSpace = this.env.ATOMSPACE.idFromName("primary");
 		const atomSpaceStub = this.env.ATOMSPACE.get(atomSpace);
 
@@ -312,15 +323,17 @@ export class MindAgent extends DurableObject<Env> {
 		const query: AtomSpaceQuery = {
 			type: "find_atoms",
 			attentionValueMin: { sti: 50, lti: 0, vlti: 0 },
-			limit: 20
+			limit: 20,
 		};
 
-		const response = await atomSpaceStub.fetch(new Request("http://dummy/query", {
-			method: "POST",
-			body: JSON.stringify(query)
-		}));
+		const response = await atomSpaceStub.fetch(
+			new Request("http://dummy/query", {
+				method: "POST",
+				body: JSON.stringify(query),
+			}),
+		);
 
-		const { data: highSTIAtoms } = await response.json() as any;
+		const { data: highSTIAtoms } = (await response.json()) as any;
 		let atomsProcessed = 0;
 		let atomsModified = 0;
 
@@ -330,23 +343,26 @@ export class MindAgent extends DurableObject<Env> {
 
 			// Get incoming links
 			const incomingResponse = await atomSpaceStub.fetch(
-				new Request(`http://dummy/incoming/${atom.id}`)
+				new Request(`http://dummy/incoming/${atom.id}`),
 			);
-			const { data: incomingLinks } = await incomingResponse.json() as any;
+			const { data: incomingLinks } = (await incomingResponse.json()) as any;
 
 			// Spread STI to connected atoms
 			for (const link of incomingLinks) {
-				const spreadAmount = atom.attentionValue.sti * agent.parameters.spreadFactor;
-				
-				await atomSpaceStub.fetch(new Request(`http://dummy/atom/${link.id}`, {
-					method: "PUT",
-					body: JSON.stringify({
-						attentionValue: {
-							...link.attentionValue,
-							sti: link.attentionValue.sti + spreadAmount
-						}
-					})
-				}));
+				const spreadAmount =
+					atom.attentionValue.sti * agent.parameters.spreadFactor;
+
+				await atomSpaceStub.fetch(
+					new Request(`http://dummy/atom/${link.id}`, {
+						method: "PUT",
+						body: JSON.stringify({
+							attentionValue: {
+								...link.attentionValue,
+								sti: link.attentionValue.sti + spreadAmount,
+							},
+						}),
+					}),
+				);
 				atomsModified++;
 			}
 		}
@@ -360,15 +376,17 @@ export class MindAgent extends DurableObject<Env> {
 			success: true,
 			metrics: {
 				spreadFactor: agent.parameters.spreadFactor,
-				sourceAtoms: highSTIAtoms.length
-			}
+				sourceAtoms: highSTIAtoms.length,
+			},
 		};
 	}
 
 	/**
 	 * GoalAgent: Manages and pursues system goals
 	 */
-	private async executeGoalAgent(agent: MindAgentConfig): Promise<MindAgentResult> {
+	private async executeGoalAgent(
+		agent: MindAgentConfig,
+	): Promise<MindAgentResult> {
 		let atomsProcessed = 0;
 		let atomsCreated = 0;
 		let atomsModified = 0;
@@ -377,10 +395,10 @@ export class MindAgent extends DurableObject<Env> {
 		for (const goal of this.goals.values()) {
 			if (goal.status === "active") {
 				atomsProcessed++;
-				
+
 				// Check goal conditions
 				const conditionsMet = await this.checkGoalConditions(goal);
-				
+
 				if (conditionsMet) {
 					// Execute goal actions
 					for (const action of goal.actions) {
@@ -392,7 +410,7 @@ export class MindAgent extends DurableObject<Env> {
 							atomsModified++;
 						}
 					}
-					
+
 					// Mark goal as completed
 					goal.status = "completed";
 					goal.completedAt = Date.now();
@@ -412,9 +430,9 @@ export class MindAgent extends DurableObject<Env> {
 				conditions: [],
 				actions: [],
 				createdAt: Date.now(),
-				updatedAt: Date.now()
+				updatedAt: Date.now(),
 			};
-			
+
 			this.goals.set(newGoal.id, newGoal);
 			atomsCreated++;
 		}
@@ -429,16 +447,22 @@ export class MindAgent extends DurableObject<Env> {
 			atomsModified,
 			success: true,
 			metrics: {
-				activeGoals: Array.from(this.goals.values()).filter(g => g.status === "active").length,
-				completedGoals: Array.from(this.goals.values()).filter(g => g.status === "completed").length
-			}
+				activeGoals: Array.from(this.goals.values()).filter(
+					(g) => g.status === "active",
+				).length,
+				completedGoals: Array.from(this.goals.values()).filter(
+					(g) => g.status === "completed",
+				).length,
+			},
 		};
 	}
 
 	/**
 	 * HebbianAgent: Implements Hebbian learning ("neurons that fire together, wire together")
 	 */
-	private async executeHebbianAgent(agent: MindAgentConfig): Promise<MindAgentResult> {
+	private async executeHebbianAgent(
+		agent: MindAgentConfig,
+	): Promise<MindAgentResult> {
 		// Implementation would analyze co-occurring atoms and strengthen their connections
 		return {
 			agentId: agent.id,
@@ -448,15 +472,17 @@ export class MindAgent extends DurableObject<Env> {
 			atomsModified: 0,
 			success: true,
 			metrics: {
-				learningRate: agent.parameters.learningRate
-			}
+				learningRate: agent.parameters.learningRate,
+			},
 		};
 	}
 
 	/**
 	 * ReasoningAgent: Performs logical inference
 	 */
-	private async executeReasoningAgent(agent: MindAgentConfig): Promise<MindAgentResult> {
+	private async executeReasoningAgent(
+		agent: MindAgentConfig,
+	): Promise<MindAgentResult> {
 		// Implementation would perform pattern matching and logical inference
 		return {
 			agentId: agent.id,
@@ -464,14 +490,16 @@ export class MindAgent extends DurableObject<Env> {
 			atomsProcessed: 0,
 			atomsCreated: 0,
 			atomsModified: 0,
-			success: true
+			success: true,
 		};
 	}
 
 	/**
 	 * LearningAgent: Adapts system behavior based on experience
 	 */
-	private async executeLearningAgent(agent: MindAgentConfig): Promise<MindAgentResult> {
+	private async executeLearningAgent(
+		agent: MindAgentConfig,
+	): Promise<MindAgentResult> {
 		// Implementation would analyze patterns and adapt agent parameters
 		return {
 			agentId: agent.id,
@@ -479,14 +507,16 @@ export class MindAgent extends DurableObject<Env> {
 			atomsProcessed: 0,
 			atomsCreated: 0,
 			atomsModified: 0,
-			success: true
+			success: true,
 		};
 	}
 
 	/**
 	 * PlanningAgent: Creates and executes plans to achieve goals
 	 */
-	private async executePlanningAgent(agent: MindAgentConfig): Promise<MindAgentResult> {
+	private async executePlanningAgent(
+		agent: MindAgentConfig,
+	): Promise<MindAgentResult> {
 		// Implementation would create action sequences to achieve goals
 		return {
 			agentId: agent.id,
@@ -494,14 +524,16 @@ export class MindAgent extends DurableObject<Env> {
 			atomsProcessed: 0,
 			atomsCreated: 0,
 			atomsModified: 0,
-			success: true
+			success: true,
 		};
 	}
 
 	/**
 	 * PerceptionAgent: Processes sensory input and creates percepts
 	 */
-	private async executePerceptionAgent(agent: MindAgentConfig): Promise<MindAgentResult> {
+	private async executePerceptionAgent(
+		agent: MindAgentConfig,
+	): Promise<MindAgentResult> {
 		// Implementation would process external input and create perceptual atoms
 		return {
 			agentId: agent.id,
@@ -509,7 +541,7 @@ export class MindAgent extends DurableObject<Env> {
 			atomsProcessed: 0,
 			atomsCreated: 0,
 			atomsModified: 0,
-			success: true
+			success: true,
 		};
 	}
 
@@ -524,12 +556,14 @@ export class MindAgent extends DurableObject<Env> {
 	/**
 	 * Create a new goal
 	 */
-	async createGoal(goalData: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>): Promise<Goal> {
+	async createGoal(
+		goalData: Omit<Goal, "id" | "createdAt" | "updatedAt">,
+	): Promise<Goal> {
 		const goal: Goal = {
 			...goalData,
 			id: nanoid(),
 			createdAt: Date.now(),
-			updatedAt: Date.now()
+			updatedAt: Date.now(),
 		};
 
 		this.goals.set(goal.id, goal);
@@ -560,54 +594,62 @@ export class MindAgent extends DurableObject<Env> {
 
 		try {
 			if (request.method === "GET" && path === "/agents") {
-				return Response.json({ 
-					success: true, 
-					data: this.getAgents(), 
-					timestamp: Date.now() 
+				return Response.json({
+					success: true,
+					data: this.getAgents(),
+					timestamp: Date.now(),
 				});
 			}
 
 			if (request.method === "GET" && path === "/goals") {
-				return Response.json({ 
-					success: true, 
-					data: this.getGoals(), 
-					timestamp: Date.now() 
+				return Response.json({
+					success: true,
+					data: this.getGoals(),
+					timestamp: Date.now(),
 				});
 			}
 
 			if (request.method === "POST" && path === "/goal") {
-				const goalData = await request.json() as Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>;
+				const goalData = (await request.json()) as Omit<
+					Goal,
+					"id" | "createdAt" | "updatedAt"
+				>;
 				const goal = await this.createGoal(goalData);
-				return Response.json({ 
-					success: true, 
-					data: goal, 
-					timestamp: Date.now() 
+				return Response.json({
+					success: true,
+					data: goal,
+					timestamp: Date.now(),
 				});
 			}
 
 			if (request.method === "POST" && path.startsWith("/execute/")) {
 				const agentId = path.split("/")[2];
 				const result = await this.executeAgent(agentId);
-				return Response.json({ 
-					success: true, 
-					data: result, 
-					timestamp: Date.now() 
+				return Response.json({
+					success: true,
+					data: result,
+					timestamp: Date.now(),
 				});
 			}
 
-			return Response.json({ 
-				success: false, 
-				error: "Not found", 
-				timestamp: Date.now() 
-			}, { status: 404 });
-
+			return Response.json(
+				{
+					success: false,
+					error: "Not found",
+					timestamp: Date.now(),
+				},
+				{ status: 404 },
+			);
 		} catch (error) {
 			console.error("MindAgent error:", error);
-			return Response.json({ 
-				success: false, 
-				error: error instanceof Error ? error.message : "Unknown error",
-				timestamp: Date.now() 
-			}, { status: 500 });
+			return Response.json(
+				{
+					success: false,
+					error: error instanceof Error ? error.message : "Unknown error",
+					timestamp: Date.now(),
+				},
+				{ status: 500 },
+			);
 		}
 	}
 }

@@ -77,6 +77,9 @@
     },
     "react-router-postgres-ssr-template": {
       "package_json_hash": "fa522a1710c99972d76a0f15ee82a7fd848b5551"
+    },
+    "cogflare-worker-platform-template": {
+      "package_json_hash": "c2e894e73aa07f0cfca922cf01e68d68caf9bb72"
     }
   }
 }

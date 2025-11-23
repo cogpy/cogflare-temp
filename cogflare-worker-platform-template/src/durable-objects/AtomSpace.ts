@@ -1,26 +1,25 @@
 import { DurableObject } from "cloudflare:workers";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-import { 
-	Env, 
-	Atom, 
-	Node, 
-	Link, 
-	AtomType, 
-	TruthValue, 
+import {
+	Env,
+	Atom,
+	Node,
+	Link,
+	AtomType,
+	TruthValue,
 	AttentionValue,
 	AtomSpaceQuery,
-	AtomSpaceResponse 
+	AtomSpaceResponse,
 } from "../types/cognitive";
 
 /**
  * AtomSpace Durable Object - Core hypergraph knowledge representation
- * 
+ *
  * This class implements a simplified version of OpenCog's AtomSpace using
  * Durable Objects for persistent state and distributed coordination.
  */
 export class AtomSpace extends DurableObject<Env> {
-	
 	constructor(ctx: DurableObjectState, env: Env) {
 		super(ctx, env);
 	}
@@ -63,29 +62,51 @@ export class AtomSpace extends DurableObject<Env> {
 	/**
 	 * Create a new Node in the AtomSpace
 	 */
-	async createNode(type: Extract<AtomType, 'Node' | 'ConceptNode' | 'PredicateNode' | 'VariableNode'>, 
-					 name: string, 
-					 truthValue?: TruthValue, 
-					 attentionValue?: AttentionValue): Promise<Node> {
-		
+	async createNode(
+		type: Extract<
+			AtomType,
+			"Node" | "ConceptNode" | "PredicateNode" | "VariableNode"
+		>,
+		name: string,
+		truthValue?: TruthValue,
+		attentionValue?: AttentionValue,
+	): Promise<Node> {
 		const id = nanoid();
 		const now = Date.now();
 		const tv = truthValue || { strength: 0.5, confidence: 0.5 };
 		const av = attentionValue || { sti: 0, lti: 0, vlti: 0 };
 
 		// Check if node with same type and name already exists
-		const existing = this.ctx.storage.sql.exec(`
+		const existing = this.ctx.storage.sql
+			.exec(
+				`
 			SELECT id FROM atoms WHERE type = ? AND name = ?
-		`, type, name).toArray();
+		`,
+				type,
+				name,
+			)
+			.toArray();
 
 		if (existing.length > 0) {
 			throw new Error(`Node with type ${type} and name ${name} already exists`);
 		}
 
-		await this.ctx.storage.sql.exec(`
+		await this.ctx.storage.sql.exec(
+			`
 			INSERT INTO atoms (id, type, name, truth_strength, truth_confidence, sti, lti, vlti, created_at, updated_at)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		`, id, type, name, tv.strength, tv.confidence, av.sti, av.lti, av.vlti, now, now);
+		`,
+			id,
+			type,
+			name,
+			tv.strength,
+			tv.confidence,
+			av.sti,
+			av.lti,
+			av.vlti,
+			now,
+			now,
+		);
 
 		const node: Node = {
 			id,
@@ -94,7 +115,7 @@ export class AtomSpace extends DurableObject<Env> {
 			truthValue: tv,
 			attentionValue: av,
 			createdAt: now,
-			updatedAt: now
+			updatedAt: now,
 		};
 
 		return node;
@@ -103,20 +124,37 @@ export class AtomSpace extends DurableObject<Env> {
 	/**
 	 * Create a new Link in the AtomSpace
 	 */
-	async createLink(type: Extract<AtomType, 'Link' | 'EvaluationLink' | 'InheritanceLink' | 'SimilarityLink' | 'ImplicationLink' | 'ListLink' | 'AndLink' | 'OrLink' | 'NotLink'>, 
-					 outgoing: string[], 
-					 truthValue?: TruthValue, 
-					 attentionValue?: AttentionValue): Promise<Link> {
-		
+	async createLink(
+		type: Extract<
+			AtomType,
+			| "Link"
+			| "EvaluationLink"
+			| "InheritanceLink"
+			| "SimilarityLink"
+			| "ImplicationLink"
+			| "ListLink"
+			| "AndLink"
+			| "OrLink"
+			| "NotLink"
+		>,
+		outgoing: string[],
+		truthValue?: TruthValue,
+		attentionValue?: AttentionValue,
+	): Promise<Link> {
 		if (outgoing.length === 0) {
 			throw new Error("Link must have at least one outgoing atom");
 		}
 
 		// Verify all outgoing atoms exist
-		const placeholders = outgoing.map(() => '?').join(',');
-		const existingAtoms = this.ctx.storage.sql.exec(`
+		const placeholders = outgoing.map(() => "?").join(",");
+		const existingAtoms = this.ctx.storage.sql
+			.exec(
+				`
 			SELECT id FROM atoms WHERE id IN (${placeholders})
-		`, ...outgoing).toArray();
+		`,
+				...outgoing,
+			)
+			.toArray();
 
 		if (existingAtoms.length !== outgoing.length) {
 			throw new Error("One or more outgoing atoms do not exist");
@@ -128,17 +166,34 @@ export class AtomSpace extends DurableObject<Env> {
 		const av = attentionValue || { sti: 0, lti: 0, vlti: 0 };
 
 		// Create the link atom
-		await this.ctx.storage.sql.exec(`
+		await this.ctx.storage.sql.exec(
+			`
 			INSERT INTO atoms (id, type, truth_strength, truth_confidence, sti, lti, vlti, created_at, updated_at)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-		`, id, type, tv.strength, tv.confidence, av.sti, av.lti, av.vlti, now, now);
+		`,
+			id,
+			type,
+			tv.strength,
+			tv.confidence,
+			av.sti,
+			av.lti,
+			av.vlti,
+			now,
+			now,
+		);
 
 		// Create the link relationships
 		for (let i = 0; i < outgoing.length; i++) {
-			await this.ctx.storage.sql.exec(`
+			await this.ctx.storage.sql.exec(
+				`
 				INSERT INTO links (id, link_id, target_id, position)
 				VALUES (?, ?, ?, ?)
-			`, nanoid(), id, outgoing[i], i);
+			`,
+				nanoid(),
+				id,
+				outgoing[i],
+				i,
+			);
 		}
 
 		const link: Link = {
@@ -148,7 +203,7 @@ export class AtomSpace extends DurableObject<Env> {
 			truthValue: tv,
 			attentionValue: av,
 			createdAt: now,
-			updatedAt: now
+			updatedAt: now,
 		};
 
 		return link;
@@ -158,20 +213,25 @@ export class AtomSpace extends DurableObject<Env> {
 	 * Get an atom by ID
 	 */
 	async getAtom(id: string): Promise<Atom | null> {
-		const result = this.ctx.storage.sql.exec<{
-			id: string;
-			type: string;
-			name: string | null;
-			truth_strength: number;
-			truth_confidence: number;
-			sti: number;
-			lti: number;
-			vlti: number;
-			created_at: number;
-			updated_at: number;
-		}>(`
+		const result = this.ctx.storage.sql
+			.exec<{
+				id: string;
+				type: string;
+				name: string | null;
+				truth_strength: number;
+				truth_confidence: number;
+				sti: number;
+				lti: number;
+				vlti: number;
+				created_at: number;
+				updated_at: number;
+			}>(
+				`
 			SELECT * FROM atoms WHERE id = ?
-		`, id).toArray();
+		`,
+				id,
+			)
+			.toArray();
 
 		if (result.length === 0) {
 			return null;
@@ -184,23 +244,28 @@ export class AtomSpace extends DurableObject<Env> {
 			name: row.name || undefined,
 			truthValue: {
 				strength: row.truth_strength,
-				confidence: row.truth_confidence
+				confidence: row.truth_confidence,
 			},
 			attentionValue: {
 				sti: row.sti,
 				lti: row.lti,
-				vlti: row.vlti
+				vlti: row.vlti,
 			},
 			createdAt: row.created_at,
-			updatedAt: row.updated_at
+			updatedAt: row.updated_at,
 		};
 
 		// If it's a link, get the outgoing atoms
 		if (this.isLinkType(atom.type)) {
-			const linkResult = this.ctx.storage.sql.exec<{ target_id: string }>(`
+			const linkResult = this.ctx.storage.sql
+				.exec<{ target_id: string }>(
+					`
 				SELECT target_id FROM links WHERE link_id = ? ORDER BY position
-			`, id).toArray();
-			
+			`,
+					id,
+				)
+				.toArray();
+
 			(atom as Link).outgoing = linkResult.map((row) => row.target_id);
 		}
 
@@ -246,19 +311,21 @@ export class AtomSpace extends DurableObject<Env> {
 			params.push(query.offset);
 		}
 
-		const result = this.ctx.storage.sql.exec<{
-			id: string;
-			type: string;
-			name: string | null;
-			truth_strength: number;
-			truth_confidence: number;
-			sti: number;
-			lti: number;
-			vlti: number;
-			created_at: number;
-			updated_at: number;
-		}>(sql, ...params).toArray();
-		
+		const result = this.ctx.storage.sql
+			.exec<{
+				id: string;
+				type: string;
+				name: string | null;
+				truth_strength: number;
+				truth_confidence: number;
+				sti: number;
+				lti: number;
+				vlti: number;
+				created_at: number;
+				updated_at: number;
+			}>(sql, ...params)
+			.toArray();
+
 		const atoms: Atom[] = [];
 		for (const atomRow of result) {
 			const atom: Atom = {
@@ -267,24 +334,31 @@ export class AtomSpace extends DurableObject<Env> {
 				name: atomRow.name || undefined,
 				truthValue: {
 					strength: atomRow.truth_strength,
-					confidence: atomRow.truth_confidence
+					confidence: atomRow.truth_confidence,
 				},
 				attentionValue: {
 					sti: atomRow.sti,
 					lti: atomRow.lti,
-					vlti: atomRow.vlti
+					vlti: atomRow.vlti,
 				},
 				createdAt: atomRow.created_at,
-				updatedAt: atomRow.updated_at
+				updatedAt: atomRow.updated_at,
 			};
 
 			// If it's a link, get the outgoing atoms
 			if (this.isLinkType(atom.type)) {
-				const linkResult = this.ctx.storage.sql.exec<{ target_id: string }>(`
+				const linkResult = this.ctx.storage.sql
+					.exec<{ target_id: string }>(
+						`
 					SELECT target_id FROM links WHERE link_id = ? ORDER BY position
-				`, atom.id).toArray();
-				
-				(atom as Link).outgoing = linkResult.map((linkRow) => linkRow.target_id);
+				`,
+						atom.id,
+					)
+					.toArray();
+
+				(atom as Link).outgoing = linkResult.map(
+					(linkRow) => linkRow.target_id,
+				);
 			}
 
 			atoms.push(atom);
@@ -297,43 +371,64 @@ export class AtomSpace extends DurableObject<Env> {
 	 * Get incoming links for an atom
 	 */
 	async getIncoming(atomId: string): Promise<Link[]> {
-		const result = this.ctx.storage.sql.exec<{
-			id: string;
-			type: string;
-			truth_strength: number;
-			truth_confidence: number;
-			sti: number;
-			lti: number;
-			vlti: number;
-			created_at: number;
-			updated_at: number;
-		}>(`
+		const result = this.ctx.storage.sql
+			.exec<{
+				id: string;
+				type: string;
+				truth_strength: number;
+				truth_confidence: number;
+				sti: number;
+				lti: number;
+				vlti: number;
+				created_at: number;
+				updated_at: number;
+			}>(
+				`
 			SELECT DISTINCT a.* FROM atoms a
 			INNER JOIN links l ON a.id = l.link_id
 			WHERE l.target_id = ?
-		`, atomId).toArray();
+		`,
+				atomId,
+			)
+			.toArray();
 
 		const links: Link[] = [];
 		for (const atomRow of result) {
-			const linkResult = this.ctx.storage.sql.exec<{ target_id: string }>(`
+			const linkResult = this.ctx.storage.sql
+				.exec<{ target_id: string }>(
+					`
 				SELECT target_id FROM links WHERE link_id = ? ORDER BY position
-			`, atomRow.id).toArray();
-			
+			`,
+					atomRow.id,
+				)
+				.toArray();
+
 			const link: Link = {
 				id: atomRow.id,
-				type: atomRow.type as Extract<AtomType, 'Link' | 'EvaluationLink' | 'InheritanceLink' | 'SimilarityLink' | 'ImplicationLink' | 'ListLink' | 'AndLink' | 'OrLink' | 'NotLink'>,
+				type: atomRow.type as Extract<
+					AtomType,
+					| "Link"
+					| "EvaluationLink"
+					| "InheritanceLink"
+					| "SimilarityLink"
+					| "ImplicationLink"
+					| "ListLink"
+					| "AndLink"
+					| "OrLink"
+					| "NotLink"
+				>,
 				outgoing: linkResult.map((linkRow) => linkRow.target_id),
 				truthValue: {
 					strength: atomRow.truth_strength,
-					confidence: atomRow.truth_confidence
+					confidence: atomRow.truth_confidence,
 				},
 				attentionValue: {
 					sti: atomRow.sti,
 					lti: atomRow.lti,
-					vlti: atomRow.vlti
+					vlti: atomRow.vlti,
 				},
 				createdAt: atomRow.created_at,
-				updatedAt: atomRow.updated_at
+				updatedAt: atomRow.updated_at,
 			};
 
 			links.push(link);
@@ -345,7 +440,11 @@ export class AtomSpace extends DurableObject<Env> {
 	/**
 	 * Update an atom's truth or attention values
 	 */
-	async updateAtom(id: string, truthValue?: TruthValue, attentionValue?: AttentionValue): Promise<boolean> {
+	async updateAtom(
+		id: string,
+		truthValue?: TruthValue,
+		attentionValue?: AttentionValue,
+	): Promise<boolean> {
 		const updates: string[] = [];
 		const params: any[] = [];
 
@@ -367,9 +466,12 @@ export class AtomSpace extends DurableObject<Env> {
 		params.push(Date.now());
 		params.push(id);
 
-		const result = this.ctx.storage.sql.exec(`
+		const result = this.ctx.storage.sql.exec(
+			`
 			UPDATE atoms SET ${updates.join(", ")} WHERE id = ?
-		`, ...params);
+		`,
+			...params,
+		);
 
 		return result.rowsWritten > 0;
 	}
@@ -379,14 +481,21 @@ export class AtomSpace extends DurableObject<Env> {
 	 */
 	async deleteAtom(id: string): Promise<boolean> {
 		// Delete all links that reference this atom
-		this.ctx.storage.sql.exec(`
+		this.ctx.storage.sql.exec(
+			`
 			DELETE FROM links WHERE link_id = ? OR target_id = ?
-		`, id, id);
+		`,
+			id,
+			id,
+		);
 
 		// Delete the atom itself
-		const result = this.ctx.storage.sql.exec(`
+		const result = this.ctx.storage.sql.exec(
+			`
 			DELETE FROM atoms WHERE id = ?
-		`, id);
+		`,
+			id,
+		);
 
 		return result.rowsWritten > 0;
 	}
@@ -395,25 +504,45 @@ export class AtomSpace extends DurableObject<Env> {
 	 * Get AtomSpace statistics
 	 */
 	async getStatistics(): Promise<any> {
-		const totalAtoms = this.ctx.storage.sql.exec<{ count: number }>(`
+		const totalAtoms = this.ctx.storage.sql
+			.exec<{ count: number }>(
+				`
 			SELECT COUNT(*) as count FROM atoms
-		`).one();
+		`,
+			)
+			.one();
 
-		const nodeCount = this.ctx.storage.sql.exec<{ count: number }>(`
+		const nodeCount = this.ctx.storage.sql
+			.exec<{ count: number }>(
+				`
 			SELECT COUNT(*) as count FROM atoms WHERE type LIKE '%Node'
-		`).one();
+		`,
+			)
+			.one();
 
-		const linkCount = this.ctx.storage.sql.exec<{ count: number }>(`
+		const linkCount = this.ctx.storage.sql
+			.exec<{ count: number }>(
+				`
 			SELECT COUNT(*) as count FROM atoms WHERE type LIKE '%Link'
-		`).one();
+		`,
+			)
+			.one();
 
-		const avgTruthValue = this.ctx.storage.sql.exec<{ strength: number | null; confidence: number | null }>(`
+		const avgTruthValue = this.ctx.storage.sql
+			.exec<{ strength: number | null; confidence: number | null }>(
+				`
 			SELECT AVG(truth_strength) as strength, AVG(truth_confidence) as confidence FROM atoms
-		`).one();
+		`,
+			)
+			.one();
 
-		const avgAttentionValue = this.ctx.storage.sql.exec<{ sti: number | null; lti: number | null; vlti: number | null }>(`
+		const avgAttentionValue = this.ctx.storage.sql
+			.exec<{ sti: number | null; lti: number | null; vlti: number | null }>(
+				`
 			SELECT AVG(sti) as sti, AVG(lti) as lti, AVG(vlti) as vlti FROM atoms
-		`).one();
+		`,
+			)
+			.one();
 
 		return {
 			totalAtoms: totalAtoms.count,
@@ -421,13 +550,13 @@ export class AtomSpace extends DurableObject<Env> {
 			linkCount: linkCount.count,
 			averageTruthValue: {
 				strength: avgTruthValue.strength || 0,
-				confidence: avgTruthValue.confidence || 0
+				confidence: avgTruthValue.confidence || 0,
 			},
 			averageAttentionValue: {
 				sti: avgAttentionValue.sti || 0,
 				lti: avgAttentionValue.lti || 0,
-				vlti: avgAttentionValue.vlti || 0
-			}
+				vlti: avgAttentionValue.vlti || 0,
+			},
 		};
 	}
 
@@ -444,59 +573,111 @@ export class AtomSpace extends DurableObject<Env> {
 
 			if (request.method === "GET" && path === "/stats") {
 				const stats = await this.getStatistics();
-				return Response.json({ success: true, data: stats, timestamp: Date.now() });
+				return Response.json({
+					success: true,
+					data: stats,
+					timestamp: Date.now(),
+				});
 			}
 
 			if (request.method === "GET" && path.startsWith("/atom/")) {
 				const atomId = path.split("/")[2];
 				const atom = await this.getAtom(atomId);
-				return Response.json({ success: true, data: atom, timestamp: Date.now() });
+				return Response.json({
+					success: true,
+					data: atom,
+					timestamp: Date.now(),
+				});
 			}
 
 			if (request.method === "GET" && path.startsWith("/incoming/")) {
 				const atomId = path.split("/")[2];
 				const incoming = await this.getIncoming(atomId);
-				return Response.json({ success: true, data: incoming, timestamp: Date.now() });
+				return Response.json({
+					success: true,
+					data: incoming,
+					timestamp: Date.now(),
+				});
 			}
 
 			if (request.method === "POST" && path === "/query") {
-				const query = await request.json() as AtomSpaceQuery;
+				const query = (await request.json()) as AtomSpaceQuery;
 				const atoms = await this.queryAtoms(query);
-				return Response.json({ success: true, data: atoms, timestamp: Date.now() });
+				return Response.json({
+					success: true,
+					data: atoms,
+					timestamp: Date.now(),
+				});
 			}
 
 			if (request.method === "POST" && path === "/node") {
-				const body = await request.json() as { 
-					type: Extract<AtomType, 'Node' | 'ConceptNode' | 'PredicateNode' | 'VariableNode'>; 
-					name: string; 
-					truthValue?: TruthValue; 
+				const body = (await request.json()) as {
+					type: Extract<
+						AtomType,
+						"Node" | "ConceptNode" | "PredicateNode" | "VariableNode"
+					>;
+					name: string;
+					truthValue?: TruthValue;
 					attentionValue?: AttentionValue;
 				};
 				const { type, name, truthValue, attentionValue } = body;
-				const node = await this.createNode(type, name, truthValue, attentionValue);
-				return Response.json({ success: true, data: node, timestamp: Date.now() });
+				const node = await this.createNode(
+					type,
+					name,
+					truthValue,
+					attentionValue,
+				);
+				return Response.json({
+					success: true,
+					data: node,
+					timestamp: Date.now(),
+				});
 			}
 
 			if (request.method === "POST" && path === "/link") {
-				const body = await request.json() as { 
-					type: Extract<AtomType, 'Link' | 'EvaluationLink' | 'InheritanceLink' | 'SimilarityLink' | 'ImplicationLink' | 'ListLink' | 'AndLink' | 'OrLink' | 'NotLink'>; 
-					outgoing: string[]; 
-					truthValue?: TruthValue; 
+				const body = (await request.json()) as {
+					type: Extract<
+						AtomType,
+						| "Link"
+						| "EvaluationLink"
+						| "InheritanceLink"
+						| "SimilarityLink"
+						| "ImplicationLink"
+						| "ListLink"
+						| "AndLink"
+						| "OrLink"
+						| "NotLink"
+					>;
+					outgoing: string[];
+					truthValue?: TruthValue;
 					attentionValue?: AttentionValue;
 				};
 				const { type, outgoing, truthValue, attentionValue } = body;
-				const link = await this.createLink(type, outgoing, truthValue, attentionValue);
-				return Response.json({ success: true, data: link, timestamp: Date.now() });
+				const link = await this.createLink(
+					type,
+					outgoing,
+					truthValue,
+					attentionValue,
+				);
+				return Response.json({
+					success: true,
+					data: link,
+					timestamp: Date.now(),
+				});
 			}
 
 			if (request.method === "PUT" && path.startsWith("/atom/")) {
 				const atomId = path.split("/")[2];
-				const body = await request.json() as { 
-					truthValue?: TruthValue; 
+				const body = (await request.json()) as {
+					truthValue?: TruthValue;
 					attentionValue?: AttentionValue;
 				};
 				const { truthValue, attentionValue } = body;
-				const success = await this.updateAtom(atomId, truthValue, attentionValue);
+				const success = await this.updateAtom(
+					atomId,
+					truthValue,
+					attentionValue,
+				);
 				return Response.json({ success, timestamp: Date.now() });
 			}
 
@@ -506,15 +687,20 @@ export class AtomSpace extends DurableObject<Env> {
 				return Response.json({ success, timestamp: Date.now() });
 			}
 
-			return Response.json({ success: false, error: "Not found", timestamp: Date.now() }, { status: 404 });
-
+			return Response.json(
+				{ success: false, error: "Not found", timestamp: Date.now() },
+				{ status: 404 },
+			);
 		} catch (error) {
 			console.error("AtomSpace error:", error);
-			return Response.json({ 
-				success: false, 
-				error: error instanceof Error ? error.message : "Unknown error",
-				timestamp: Date.now() 
-			}, { status: 500 });
+			return Response.json(
+				{
+					success: false,
+					error: error instanceof Error ? error.message : "Unknown error",
+					timestamp: Date.now(),
+				},
+				{ status: 500 },
+			);
 		}
 	}
 
@@ -522,6 +708,6 @@ export class AtomSpace extends DurableObject<Env> {
 	 * Check if an atom type is a link type
 	 */
 	private isLinkType(type: AtomType): boolean {
-		return type.includes('Link');
+		return type.includes("Link");
 	}
 }

@@ -16,5 +16,3 @@ export type OutgoingMessage =
 			type: "remove-marker";
 			id: string;
 	  };
-
-

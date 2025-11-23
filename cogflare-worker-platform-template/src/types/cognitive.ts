@@ -12,20 +12,20 @@ export interface Env {
 }
 
 // Core Atom types
-export type AtomType = 
-	| 'Node'
-	| 'Link'
-	| 'ConceptNode'
-	| 'PredicateNode'
-	| 'VariableNode'
-	| 'EvaluationLink'
-	| 'InheritanceLink'
-	| 'SimilarityLink'
-	| 'ImplicationLink'
-	| 'ListLink'
-	| 'AndLink'
-	| 'OrLink'
-	| 'NotLink';
+export type AtomType =
+	| "Node"
+	| "Link"
+	| "ConceptNode"
+	| "PredicateNode"
+	| "VariableNode"
+	| "EvaluationLink"
+	| "InheritanceLink"
+	| "SimilarityLink"
+	| "ImplicationLink"
+	| "ListLink"
+	| "AndLink"
+	| "OrLink"
+	| "NotLink";
 
 export interface Atom {
 	id: string;
@@ -38,12 +38,26 @@ export interface Atom {
 }
 
 export interface Node extends Atom {
-	type: Extract<AtomType, 'Node' | 'ConceptNode' | 'PredicateNode' | 'VariableNode'>;
+	type: Extract<
+		AtomType,
+		"Node" | "ConceptNode" | "PredicateNode" | "VariableNode"
+	>;
 	name: string;
 }
 
 export interface Link extends Atom {
-	type: Extract<AtomType, 'Link' | 'EvaluationLink' | 'InheritanceLink' | 'SimilarityLink' | 'ImplicationLink' | 'ListLink' | 'AndLink' | 'OrLink' | 'NotLink'>;
+	type: Extract<
+		AtomType,
+		| "Link"
+		| "EvaluationLink"
+		| "InheritanceLink"
+		| "SimilarityLink"
+		| "ImplicationLink"
+		| "ListLink"
+		| "AndLink"
+		| "OrLink"
+		| "NotLink"
+	>;
 	outgoing: string[]; // Array of atom IDs
 }
 
@@ -69,15 +83,15 @@ export interface MindAgentConfig {
 	parameters: Record<string, any>;
 }
 
-export type MindAgentType = 
-	| 'ForgetAgent'
-	| 'HebbianAgent'
-	| 'ImportanceSpreadingAgent'
-	| 'GoalAgent'
-	| 'PlanningAgent'
-	| 'ReasoningAgent'
-	| 'LearningAgent'
-	| 'PerceptionAgent';
+export type MindAgentType =
+	| "ForgetAgent"
+	| "HebbianAgent"
+	| "ImportanceSpreadingAgent"
+	| "GoalAgent"
+	| "PlanningAgent"
+	| "ReasoningAgent"
+	| "LearningAgent"
+	| "PerceptionAgent";
 
 export interface MindAgentResult {
 	agentId: string;
@@ -105,24 +119,29 @@ export interface Goal {
 	completedAt?: number;
 }
 
-export type GoalType = 'explicit' | 'implicit' | 'system';
-export type GoalStatus = 'active' | 'paused' | 'completed' | 'failed' | 'cancelled';
+export type GoalType = "explicit" | "implicit" | "system";
+export type GoalStatus =
+	| "active"
+	| "paused"
+	| "completed"
+	| "failed"
+	| "cancelled";
 
 export interface GoalCondition {
-	type: 'atom_exists' | 'atom_truth_value' | 'atom_attention' | 'custom';
+	type: "atom_exists" | "atom_truth_value" | "atom_attention" | "custom";
 	atomId?: string;
 	predicate: string;
 	threshold?: number;
 }
 
 export interface GoalAction {
-	type: 'create_atom' | 'modify_atom' | 'execute_agent' | 'custom';
+	type: "create_atom" | "modify_atom" | "execute_agent" | "custom";
 	parameters: Record<string, any>;
 }
 
 // AtomSpace query types
 export interface AtomSpaceQuery {
-	type: 'find_atoms' | 'get_incoming' | 'get_outgoing' | 'pattern_match';
+	type: "find_atoms" | "get_incoming" | "get_outgoing" | "pattern_match";
 	atomType?: AtomType;
 	name?: string;
 	truthValueMin?: TruthValue;
@@ -144,7 +163,7 @@ export interface VariableBinding {
 }
 
 export interface QueryClause {
-	type: 'atom' | 'link' | 'evaluation' | 'inheritance';
+	type: "atom" | "link" | "evaluation" | "inheritance";
 	atom?: string | VariableBinding;
 	predicate?: string | VariableBinding;
 	arguments?: (string | VariableBinding)[];
