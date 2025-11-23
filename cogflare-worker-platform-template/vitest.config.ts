@@ -11,18 +11,3 @@ export default defineWorkersConfig({
 		globals: true,
 	},
 });
-
-
-================================================================================
-Content from: vitest.config (2).ts
-================================================================================
-
-import { defineConfig } from "vitest/config";
-
-export default defineConfig({
-	test: {
-		// Node.js environment
-		environment: "node",
-		include: ["cli/**/*.test.ts"],
-	},
-});
