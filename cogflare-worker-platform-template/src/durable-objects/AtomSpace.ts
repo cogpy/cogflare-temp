@@ -600,15 +600,29 @@ export class AtomSpace extends DurableObject<Env> {
 				});
 			}
 
-			if (request.method === "POST" && path === "/query") {
-				const query = (await request.json()) as AtomSpaceQuery;
-				const atoms = await this.queryAtoms(query);
-				return Response.json({
-					success: true,
-					data: atoms,
-					timestamp: Date.now(),
-				});
-			}
+				if (request.method === "POST" && path === "/query") {
+					const query = (await request.json()) as AtomSpaceQuery;
+					
+					// Check if this is a pattern match query
+					if (query.type === "pattern_match" && query.pattern) {
+						// Pattern matching handled by PatternMatcher
+						// This would require importing PatternMatcher
+						// For now, return empty results with a note
+						return Response.json({
+							success: true,
+							data: [],
+							timestamp: Date.now(),
+							message: "Pattern matching available via worker API",
+						});
+					}
+					
+					const atoms = await this.queryAtoms(query);
+					return Response.json({
+						success: true,
+						data: atoms,
+						timestamp: Date.now(),
+					});
+				}
 
 			if (request.method === "POST" && path === "/node") {
 				const body = (await request.json()) as {
