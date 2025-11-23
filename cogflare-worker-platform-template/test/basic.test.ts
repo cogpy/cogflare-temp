@@ -9,7 +9,7 @@ describe("Cogflare OpenCog Platform", () => {
 	it("should respond to health check", async () => {
 		const response = await SELF.fetch("http://example.com/health");
 		expect(response.status).toBe(200);
-		
+
 		const result = await response.json();
 		expect(result.status).toBe("healthy");
 		expect(result.platform).toBe("Cogflare OpenCog Platform");
@@ -18,7 +18,7 @@ describe("Cogflare OpenCog Platform", () => {
 	it("should serve the main page", async () => {
 		const response = await SELF.fetch("http://example.com/");
 		expect(response.status).toBe(200);
-		
+
 		const html = await response.text();
 		expect(html).toContain("Cogflare OpenCog Platform");
 		expect(html).toContain("AtomSpace");
@@ -28,7 +28,7 @@ describe("Cogflare OpenCog Platform", () => {
 	it("should provide dashboard API", async () => {
 		const response = await SELF.fetch("http://example.com/api/dashboard");
 		expect(response.status).toBe(200);
-		
+
 		const dashboard = await response.json();
 		expect(dashboard).toHaveProperty("atomSpace");
 		expect(dashboard).toHaveProperty("mindAgents");
@@ -37,12 +37,15 @@ describe("Cogflare OpenCog Platform", () => {
 	});
 
 	it("should handle cognitive perception", async () => {
-		const response = await SELF.fetch("http://example.com/api/cognitive/perceive", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ input: "test perception", inputType: "text" })
-		});
-		
+		const response = await SELF.fetch(
+			"http://example.com/api/cognitive/perceive",
+			{
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ input: "test perception", inputType: "text" }),
+			},
+		);
+
 		expect(response.status).toBe(200);
 		const result = await response.json();
 		expect(result.success).toBe(true);
@@ -50,12 +53,18 @@ describe("Cogflare OpenCog Platform", () => {
 	});
 
 	it("should handle AI reasoning", async () => {
-		const response = await SELF.fetch("http://example.com/api/cognitive/reason", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ query: "What is cognition?", context: "test context" })
-		});
-		
+		const response = await SELF.fetch(
+			"http://example.com/api/cognitive/reason",
+			{
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					query: "What is cognition?",
+					context: "test context",
+				}),
+			},
+		);
+
 		expect(response.status).toBe(200);
 		const result = await response.json();
 		expect(result.success).toBe(true);

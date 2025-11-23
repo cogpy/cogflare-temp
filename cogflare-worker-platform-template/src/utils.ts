@@ -146,5 +146,3 @@ export function isValidPostgresIdentifier(name: string): {
 
 	return { valid: true };
 }
-
-
