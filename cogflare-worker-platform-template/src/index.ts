@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Env, CognitiveDashboardData } from "./types/cognitive";
+import { Env, CognitiveDashboardData, AtomSpaceResponse } from "./types/cognitive";
 import { AtomSpace } from "./durable-objects/AtomSpace";
 import { MindAgent } from "./durable-objects/MindAgent";
 
@@ -40,14 +40,14 @@ app.get('/', async (c) => {
 	try {
 		// Get AtomSpace stats
 		const atomSpaceResponse = await atomSpaceStub.fetch(new Request("http://dummy/stats"));
-		const atomSpaceStats = await atomSpaceResponse.json();
+		const atomSpaceStats = await atomSpaceResponse.json() as AtomSpaceResponse;
 
 		// Get MindAgent stats
 		const agentsResponse = await mindAgentStub.fetch(new Request("http://dummy/agents"));
-		const agentsData = await agentsResponse.json();
+		const agentsData = await agentsResponse.json() as AtomSpaceResponse;
 
 		const goalsResponse = await mindAgentStub.fetch(new Request("http://dummy/goals"));
-		const goalsData = await goalsResponse.json();
+		const goalsData = await goalsResponse.json() as AtomSpaceResponse;
 
 		const status = {
 			platform: "Cogflare OpenCog Platform",
@@ -55,12 +55,12 @@ app.get('/', async (c) => {
 			status: "active",
 			atomSpace: atomSpaceStats.success ? atomSpaceStats.data : null,
 			mindAgents: {
-				total: agentsData.success ? agentsData.data.length : 0,
-				active: agentsData.success ? agentsData.data.filter((a: any) => a.enabled).length : 0
+				total: agentsData.success ? (agentsData.data as any[]).length : 0,
+				active: agentsData.success ? (agentsData.data as any[]).filter((a: any) => a.enabled).length : 0
 			},
 			goals: {
-				total: goalsData.success ? goalsData.data.length : 0,
-				active: goalsData.success ? goalsData.data.filter((g: any) => g.status === 'active').length : 0
+				total: goalsData.success ? (goalsData.data as any[]).length : 0,
+				active: goalsData.success ? (goalsData.data as any[]).filter((g: any) => g.status === 'active').length : 0
 			},
 			timestamp: Date.now()
 		};
@@ -80,7 +80,7 @@ app.get('/', async (c) => {
 /**
  * AtomSpace API Routes
  */
-app.route('/atomspace/*', async (c) => {
+app.all('/atomspace/*', async (c) => {
 	const atomSpaceId = c.env.ATOMSPACE.idFromName("primary");
 	const atomSpaceStub = c.env.ATOMSPACE.get(atomSpaceId);
 	
@@ -90,7 +90,7 @@ app.route('/atomspace/*', async (c) => {
 	
 	const forwardedRequest = new Request(url.toString(), {
 		method: c.req.method,
-		headers: c.req.headers,
+		headers: c.req.raw.headers,
 		body: c.req.method !== 'GET' && c.req.method !== 'HEAD' ? await c.req.arrayBuffer() : undefined
 	});
 
@@ -104,7 +104,7 @@ app.route('/atomspace/*', async (c) => {
 /**
  * MindAgent API Routes
  */
-app.route('/mindagent/*', async (c) => {
+app.all('/mindagent/*', async (c) => {
 	const mindAgentId = c.env.MIND_AGENT.idFromName("primary");
 	const mindAgentStub = c.env.MIND_AGENT.get(mindAgentId);
 	
@@ -114,7 +114,7 @@ app.route('/mindagent/*', async (c) => {
 	
 	const forwardedRequest = new Request(url.toString(), {
 		method: c.req.method,
-		headers: c.req.headers,
+		headers: c.req.raw.headers,
 		body: c.req.method !== 'GET' && c.req.method !== 'HEAD' ? await c.req.arrayBuffer() : undefined
 	});
 
@@ -143,9 +143,9 @@ app.get('/api/dashboard', async (c) => {
 			mindAgentStub.fetch(new Request("http://dummy/goals"))
 		]);
 
-		const atomSpaceData = await atomSpaceResponse.json();
-		const agentsData = await agentsResponse.json();
-		const goalsData = await goalsResponse.json();
+		const atomSpaceData = await atomSpaceResponse.json() as AtomSpaceResponse;
+		const agentsData = await agentsResponse.json() as AtomSpaceResponse;
+		const goalsData = await goalsResponse.json() as AtomSpaceResponse;
 
 		const dashboardData: CognitiveDashboardData = {
 			atomSpace: atomSpaceData.success ? atomSpaceData.data : {
@@ -156,17 +156,17 @@ app.get('/api/dashboard', async (c) => {
 				averageAttentionValue: { sti: 0, lti: 0, vlti: 0 }
 			},
 			mindAgents: {
-				activeAgents: agentsData.success ? agentsData.data.filter((a: any) => a.enabled).length : 0,
+				activeAgents: agentsData.success ? (agentsData.data as any[]).filter((a: any) => a.enabled).length : 0,
 				totalExecutions: 0, // Would need to track this
 				averageExecutionTime: 0, // Would need to calculate this
 				recentResults: [] // Would need to store recent execution results
 			},
 			goals: {
-				activeGoals: goalsData.success ? goalsData.data.filter((g: any) => g.status === 'active').length : 0,
-				completedGoals: goalsData.success ? goalsData.data.filter((g: any) => g.status === 'completed').length : 0,
-				averagePriority: goalsData.success ? 
-					goalsData.data.reduce((sum: number, g: any) => sum + g.priority, 0) / goalsData.data.length : 0,
-				recentGoals: goalsData.success ? goalsData.data.slice(-5) : []
+				activeGoals: goalsData.success ? (goalsData.data as any[]).filter((g: any) => g.status === 'active').length : 0,
+				completedGoals: goalsData.success ? (goalsData.data as any[]).filter((g: any) => g.status === 'completed').length : 0,
+				averagePriority: goalsData.success && (goalsData.data as any[]).length > 0 ? 
+					(goalsData.data as any[]).reduce((sum: number, g: any) => sum + g.priority, 0) / (goalsData.data as any[]).length : 0,
+				recentGoals: goalsData.success ? (goalsData.data as any[]).slice(-5) : []
 			},
 			performance: {
 				operationsPerSecond: 0, // Would need to track this
@@ -203,7 +203,7 @@ app.post('/api/cognitive/perceive', async (c) => {
 			})
 		}));
 
-		const conceptData = await conceptResponse.json();
+		const conceptData = await conceptResponse.json() as AtomSpaceResponse;
 
 		return c.json({
 			success: true,
@@ -244,7 +244,7 @@ app.post('/api/cognitive/reason', async (c) => {
 		const atomSpaceStub = c.env.ATOMSPACE.get(atomSpaceId);
 
 		// Store the reasoning result in AtomSpace
-		const reasoningNode = await atomSpaceStub.fetch(new Request("http://dummy/node", {
+		const reasoningNodeResponse = await atomSpaceStub.fetch(new Request("http://dummy/node", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
@@ -255,10 +255,18 @@ app.post('/api/cognitive/reason', async (c) => {
 			})
 		}));
 
+		const reasoningNodeData = await reasoningNodeResponse.json() as AtomSpaceResponse;
+
+		// Extract the response text from the AI output
+		let reasoningText = "No response generated";
+		if (typeof aiResponse === 'object' && aiResponse !== null && 'response' in aiResponse) {
+			reasoningText = aiResponse.response as string;
+		}
+
 		return c.json({
 			success: true,
-			reasoning: aiResponse.response,
-			atomSpaceEntry: (await reasoningNode.json()).data,
+			reasoning: reasoningText,
+			atomSpaceEntry: reasoningNodeData.data,
 			timestamp: Date.now()
 		});
 	} catch (error) {
