@@ -44,7 +44,7 @@ export interface ShardInfo {
  * Enhanced Storage Node Durable Object
  */
 export class EnhancedStorageNode extends DurableObject<Env> {
-	private config: StorageNodeConfig;
+	private config!: StorageNodeConfig;
 	private peers: Map<string, string> = new Map(); // nodeId -> URL
 	private replicationStatus: Map<string, ReplicationStatus> = new Map();
 	private shards: Map<string, ShardInfo> = new Map();
@@ -216,7 +216,7 @@ export class EnhancedStorageNode extends DurableObject<Env> {
 				body: JSON.stringify(query),
 			})
 		);
-		const localData = await localResponse.json();
+		const localData = await localResponse.json() as { data?: Atom[] };
 		const localAtoms: Atom[] = localData.data || [];
 
 		// Query peer nodes in parallel
@@ -231,8 +231,8 @@ export class EnhancedStorageNode extends DurableObject<Env> {
 					});
 
 					if (response.ok) {
-						const data = await response.json();
-						return data.atoms || [];
+const data = await response.json() as { atoms?: Atom[] };
+							return data.atoms || [];
 					}
 				} catch (error) {
 					console.error(`Query failed to node ${nodeId}:`, error);
@@ -312,7 +312,7 @@ export class EnhancedStorageNode extends DurableObject<Env> {
 		const statsResponse = await localStub.fetch(
 			new Request("http://dummy/stats", { method: "GET" })
 		);
-		const statsData = await statsResponse.json();
+		const statsData = await statsResponse.json() as { data?: { totalAtoms?: number } };
 
 		return {
 			nodeId: this.config.nodeId,
@@ -348,8 +348,8 @@ export class EnhancedStorageNode extends DurableObject<Env> {
 					body: JSON.stringify({ type: "find_atoms", limit: 1000 }),
 				})
 			);
-			const queryData = await queryResponse.json();
-			const atoms: Atom[] = queryData.data || [];
+const queryData = await queryResponse.json() as { data?: Atom[] };
+				const atoms: Atom[] = queryData.data || [];
 
 			// Send atoms to peer
 			const syncResponse = await fetch(`${url}/sync`, {
@@ -386,22 +386,22 @@ export class EnhancedStorageNode extends DurableObject<Env> {
 
 		try {
 			// Register peer
-			if (path === "/register" && request.method === "POST") {
-				const { nodeId, url } = await request.json();
+if (path === "/register" && request.method === "POST") {
+					const { nodeId, url } = await request.json() as { nodeId: string; url: string };
 				await this.registerPeer(nodeId, url);
 				return Response.json({ success: true });
 			}
 
 			// Unregister peer
-			if (path === "/unregister" && request.method === "POST") {
-				const { nodeId } = await request.json();
+if (path === "/unregister" && request.method === "POST") {
+					const { nodeId } = await request.json() as { nodeId: string };
 				await this.unregisterPeer(nodeId);
 				return Response.json({ success: true });
 			}
 
 			// Distributed query
-			if (path === "/query" && request.method === "POST") {
-				const query = await request.json();
+if (path === "/query" && request.method === "POST") {
+					const query = await request.json() as AtomSpaceQuery;
 				const atoms = await this.distributedQuery(query);
 				return Response.json({ success: true, atoms });
 			}
@@ -413,22 +413,22 @@ export class EnhancedStorageNode extends DurableObject<Env> {
 			}
 
 			// Sync with peer
-			if (path === "/sync" && request.method === "POST") {
-				const { nodeId } = await request.json();
+if (path === "/sync" && request.method === "POST") {
+					const { nodeId } = await request.json() as { nodeId: string };
 				await this.syncWithPeer(nodeId);
 				return Response.json({ success: true });
 			}
 
 			// Initialize sharding
-			if (path === "/sharding/init" && request.method === "POST") {
-				const { shardCount } = await request.json();
+if (path === "/sharding/init" && request.method === "POST") {
+					const { shardCount } = await request.json() as { shardCount: number };
 				await this.initializeSharding(shardCount);
 				return Response.json({ success: true });
 			}
 
 			// Assign shard
-			if (path === "/sharding/assign" && request.method === "POST") {
-				const { shardId, nodeIds } = await request.json();
+if (path === "/sharding/assign" && request.method === "POST") {
+					const { shardId, nodeIds } = await request.json() as { shardId: string; nodeIds: string[] };
 				await this.assignShard(shardId, nodeIds);
 				return Response.json({ success: true });
 			}
