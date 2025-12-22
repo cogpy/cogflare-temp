@@ -324,7 +324,7 @@ app.post("/api/perceive", async (c) => {
 		const { text } = await c.req.json<{ text: string }>();
 
 		// Use Workers AI to extract concepts
-		const response = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+		const response: any = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct" as any, {
 			messages: [
 				{
 					role: "system",
@@ -358,7 +358,7 @@ app.post("/api/perceive", async (c) => {
 					}),
 				}));
 
-				const result = await nodeResponse.json();
+				const result: any = await nodeResponse.json();
 				if (result.success) {
 					createdNodes.push(result.data);
 				}

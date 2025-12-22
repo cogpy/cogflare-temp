@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
+// @ts-ignore - cloudflare:test not available in types
 import { env, createExecutionContext, waitOnExecutionContext, SELF } from "cloudflare:test";
 
 describe("Cognitive AtomSpace Template", () => {
