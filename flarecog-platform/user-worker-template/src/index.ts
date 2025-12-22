@@ -9,6 +9,7 @@
 
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { registerAtomSpaceExamples } from "./atomspace-examples";
 
 // Import types from the main flarecog implementation
 // In production, these would be shared via npm package or monorepo
@@ -329,9 +330,16 @@ app.get("/", (c) => {
 			cognitive: "/cognitive/*",
 			dashboard: "/api/dashboard",
 			health: "/api/health",
+			examples: "/examples/atomspace/*",
 		},
 	});
 });
+
+// ============================================================================
+// AtomSpace Examples (FlareSpace Adaptation)
+// ============================================================================
+
+registerAtomSpaceExamples(app);
 
 // ============================================================================
 // Helper Functions
