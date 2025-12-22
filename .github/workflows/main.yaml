@@ -51,3 +51,4 @@ jobs:
             --repoFullName ${{ github.repository }} \
             --branch ${{ github.ref_name }} \
             --hash $SHA_SHORT
+
