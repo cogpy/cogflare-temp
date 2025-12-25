@@ -417,8 +417,8 @@ export class RelevanceRealizationEngine {
       .map(p => p.atomId);
     
     // Explore valleys and gradients for exploration
-    const exploreAtoms = [
-      ...this.salienceLandscape.valleys.slice(0, 3),
+    const exploreAtoms: string[] = [
+      ...this.salienceLandscape.valleys.slice(0, 3).map(v => v.atomId),
       ...Array.from(this.salienceLandscape.gradients.entries())
         .filter(([_, g]) => g > 10)
         .slice(0, 3)

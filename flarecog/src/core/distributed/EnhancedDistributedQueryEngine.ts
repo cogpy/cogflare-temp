@@ -6,7 +6,7 @@
  * Optimized for Cloudflare Workers edge computing
  */
 
-import { Atom, Link, Node, TruthValue, AttentionValue } from '../../types/cognitive-v5';
+import { Atom, Link, Node, TruthValue, AttentionValue, KVNamespace } from '../../types/cognitive-v5';
 
 export interface QueryPattern {
   type: string;
@@ -207,9 +207,9 @@ export class EnhancedDistributedQueryEngine {
     const rankedResults = this.rankByRelevance(mergedResults, pattern);
     
     // Cache results with partitioning
-    this.cacheResults(cacheKey, rankedResults);
+    const cacheEntry = this.cacheResults(cacheKey, rankedResults);
     
-    return this.buildQueryResult(rankedResults, pattern.maxResults);
+    return this.buildQueryResult(cacheEntry, pattern.maxResults);
   }
 
   /**
@@ -503,7 +503,7 @@ export class EnhancedDistributedQueryEngine {
   private cacheResults(
     key: string,
     results: { atoms: Atom[]; bindings: Map<string, Atom>[]; scores: number[] }
-  ): void {
+  ): CacheEntry {
     // Partition by relevance ranges
     const partitions = this.partitionByRelevance(results);
     
@@ -523,6 +523,7 @@ export class EnhancedDistributedQueryEngine {
     }
     
     this.cache.set(key, entry);
+    return entry;
   }
 
   /**

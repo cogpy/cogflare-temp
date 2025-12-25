@@ -5,7 +5,9 @@
  * Extends v4 types with new systems.
  */
 
-import { Ai, Queue, VectorizeIndex } from '@cloudflare/workers-types';
+import { Ai, Queue, VectorizeIndex, DurableObjectNamespace, D1Database, R2Bucket, KVNamespace } from '@cloudflare/workers-types';
+
+export type { DurableObjectNamespace, D1Database, R2Bucket, KVNamespace };
 
 // ==================== Environment Bindings ====================
 
@@ -70,7 +72,7 @@ export interface TruthValue {
 export interface AttentionValue {
   sti: number;          // Short-Term Importance (-100 to 100)
   lti: number;          // Long-Term Importance (0 to 100)
-  vlti: boolean;        // Very Long-Term Importance flag
+  vlti: number;         // Very Long-Term Importance (0 to 100)
 }
 
 export interface Atom {
@@ -79,10 +81,11 @@ export interface Atom {
   name?: string;
   outgoing?: string[];
   truthValue: TruthValue;
-  attention?: AttentionValue;
+  attentionValue: AttentionValue;
   metadata?: Record<string, any>;
   createdAt: number;
   updatedAt: number;
+  lastAccessedAt?: number;
 }
 
 export interface Node extends Atom {
