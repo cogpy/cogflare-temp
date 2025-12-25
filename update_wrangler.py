@@ -1,40 +1,53 @@
-# FlareCog v6.0 Production Configuration
+#!/usr/bin/env python3
+"""
+Update wrangler.toml with actual Cloudflare resource IDs
+"""
+
+import json
+import os
+
+# Load resource IDs
+with open('/home/ubuntu/flarecog/resource_ids.json', 'r') as f:
+    resources = json.load(f)
+
+# Create minimal wrangler.toml for v6.0
+wrangler_config = f"""# FlareCog v6.0 Production Configuration
 name = "flarecog"
-main = "src/index.ts"
+main = "workers/app.ts"
 compatibility_date = "2024-11-01"
-account_id = "d1fcd8dbbd35aec43e5499200f6baede"
+account_id = "{os.environ.get('CLOUDFLARE_ACCOUNT_ID')}"
 
 # ==================== KV Namespaces ====================
 
 [[kv_namespaces]]
 binding = "STORAGE_METADATA"
-id = "f8426d8c65f1496a8fa7ca6f91ab272c"
+id = "{resources['kv_namespaces']['flarecog-storage-metadata']}"
 
 [[kv_namespaces]]
 binding = "TASK_RESULTS"
-id = "5267bffe50514722a43992254079523e"
+id = "{resources['kv_namespaces']['flarecog-task-results']}"
 
 [[kv_namespaces]]
 binding = "TENANT_REGISTRY"
-id = "55c57615ccc447b298dbcb072bbf18ca"
+id = "{resources['kv_namespaces']['flarecog-tenant-registry']}"
 
 [[kv_namespaces]]
 binding = "USAGE_TRACKER"
-id = "6a8f8b34864248399ef393297b5f4d50"
+id = "{resources['kv_namespaces']['flarecog-usage-tracker']}"
 
 [[kv_namespaces]]
 binding = "SHARED_KNOWLEDGE"
-id = "71ef302917254218a08f4b77b1860efe"
+id = "{resources['kv_namespaces']['flarecog-shared-knowledge']}"
 
 [[kv_namespaces]]
 binding = "KV_WARM_STORAGE"
-id = "ed860d79d02444feb287f2f56ce3d992"
+id = "{resources['kv_namespaces']['flarecog-warm-storage']}"
 
 # ==================== R2 Storage ====================
 
 [[r2_buckets]]
 binding = "R2_COLD_STORAGE"
-bucket_name = "flarecog-cold-storage"
+bucket_name = "{resources['r2_buckets']['flarecog-cold-storage']}"
 
 # ==================== Queues ====================
 
@@ -116,7 +129,7 @@ EVICTION_AGE_DAYS = "7"
 
 # ==================== Limits and Performance ====================
 
-limits = { cpu_ms = 50000 }
+limits = {{ cpu_ms = 50000 }}
 
 [placement]
 mode = "smart"
@@ -124,3 +137,17 @@ mode = "smart"
 [observability]
 enabled = true
 head_sampling_rate = 1.0
+"""
+
+# Write to file
+output_path = '/home/ubuntu/flarecog/flarecog/wrangler.toml'
+with open(output_path, 'w') as f:
+    f.write(wrangler_config)
+
+print(f"✅ Updated wrangler.toml at: {output_path}")
+print()
+print("Configuration Summary:")
+print(f"  Account ID: {os.environ.get('CLOUDFLARE_ACCOUNT_ID')}")
+print(f"  KV Namespaces: {len(resources['kv_namespaces'])}")
+print(f"  R2 Buckets: {len(resources['r2_buckets'])}")
+print(f"  Queues: {len(resources['queues'])}")

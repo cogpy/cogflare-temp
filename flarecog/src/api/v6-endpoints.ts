@@ -25,7 +25,7 @@ const app = new Hono<{ Bindings: Env }>();
  * POST /api/v6/query/distributed
  * Execute distributed query across edge network
  */
-app.post('/api/v6/query/distributed', async (c) => {
+app.post('/query/distributed', async (c) => {
   try {
     const pattern = await c.req.json<QueryPattern>();
     
@@ -57,7 +57,7 @@ app.post('/api/v6/query/distributed', async (c) => {
  * POST /api/v6/query/traverse
  * Traverse hypergraph from starting atoms
  */
-app.post('/api/v6/query/traverse', async (c) => {
+app.post('/query/traverse', async (c) => {
   try {
     const { startAtomIds, direction, maxDepth, preFetch } = await c.req.json<{
       startAtomIds: string[];
@@ -92,7 +92,7 @@ app.post('/api/v6/query/traverse', async (c) => {
  * POST /api/v6/relevance/assess
  * Assess relevance of atoms in given context
  */
-app.post('/api/v6/relevance/assess', async (c) => {
+app.post('/relevance/assess', async (c) => {
   try {
     const { atomIds, context } = await c.req.json<{
       atomIds: string[];
@@ -128,7 +128,7 @@ app.post('/api/v6/relevance/assess', async (c) => {
  * GET /api/v6/relevance/grip
  * Get optimal cognitive grip recommendations
  */
-app.get('/api/v6/relevance/grip', async (c) => {
+app.get('/relevance/grip', async (c) => {
   try {
     const relevanceEngine = new RelevanceRealizationEngine();
     const grip = relevanceEngine.getOptimalGrip();
@@ -149,7 +149,7 @@ app.get('/api/v6/relevance/grip', async (c) => {
  * GET /api/v6/relevance/landscape
  * Get current salience landscape
  */
-app.get('/api/v6/relevance/landscape', async (c) => {
+app.get('/relevance/landscape', async (c) => {
   try {
     const relevanceEngine = new RelevanceRealizationEngine();
     const landscape = relevanceEngine.getSalienceLandscape();
@@ -172,7 +172,7 @@ app.get('/api/v6/relevance/landscape', async (c) => {
  * POST /api/v6/tenant/create
  * Create new tenant with isolated AtomSpace
  */
-app.post('/api/v6/tenant/create', async (c) => {
+app.post('/tenant/create', async (c) => {
   try {
     const config = await c.req.json<Omit<TenantConfig, 'createdAt' | 'lastAccessedAt'>>();
     
@@ -202,7 +202,7 @@ app.post('/api/v6/tenant/create', async (c) => {
  * POST /api/v6/tenant/:tenantId/query
  * Execute query on tenant's AtomSpace
  */
-app.post('/api/v6/tenant/:tenantId/query', async (c) => {
+app.post('/tenant/:tenantId/query', async (c) => {
   try {
     const tenantId = c.req.param('tenantId');
     const query = await c.req.json();
@@ -233,7 +233,7 @@ app.post('/api/v6/tenant/:tenantId/query', async (c) => {
  * POST /api/v6/tenant/:tenantId/atom
  * Add atom to tenant's AtomSpace
  */
-app.post('/api/v6/tenant/:tenantId/atom', async (c) => {
+app.post('/tenant/:tenantId/atom', async (c) => {
   try {
     const tenantId = c.req.param('tenantId');
     const atom = await c.req.json();
@@ -264,7 +264,7 @@ app.post('/api/v6/tenant/:tenantId/atom', async (c) => {
  * POST /api/v6/knowledge/create
  * Create shared knowledge base
  */
-app.post('/api/v6/knowledge/create', async (c) => {
+app.post('/knowledge/create', async (c) => {
   try {
     const { ownerTenantId, name, description, isPublic } = await c.req.json<{
       ownerTenantId: string;
@@ -306,7 +306,7 @@ app.post('/api/v6/knowledge/create', async (c) => {
  * POST /api/v6/task/enqueue
  * Enqueue cognitive task for asynchronous processing
  */
-app.post('/api/v6/task/enqueue', async (c) => {
+app.post('/task/enqueue', async (c) => {
   try {
     const task = await c.req.json<CognitiveTask>();
     
@@ -338,7 +338,7 @@ app.post('/api/v6/task/enqueue', async (c) => {
  * GET /api/v6/task/:taskId/result
  * Get result of completed task
  */
-app.get('/api/v6/task/:taskId/result', async (c) => {
+app.get('/task/:taskId/result', async (c) => {
   try {
     const taskId = c.req.param('taskId');
     
@@ -378,7 +378,7 @@ app.get('/api/v6/task/:taskId/result', async (c) => {
  * GET /api/v6/storage/metrics
  * Get storage tier metrics
  */
-app.get('/api/v6/storage/metrics', async (c) => {
+app.get('/storage/metrics', async (c) => {
   try {
     const storage = new R2ColdStorageEnhanced({
       R2_COLD_STORAGE: c.env.R2_COLD_STORAGE,
@@ -405,7 +405,7 @@ app.get('/api/v6/storage/metrics', async (c) => {
  * POST /api/v6/storage/maintenance
  * Run storage tier maintenance
  */
-app.post('/api/v6/storage/maintenance', async (c) => {
+app.post('/storage/maintenance', async (c) => {
   try {
     const storage = new R2ColdStorageEnhanced({
       R2_COLD_STORAGE: c.env.R2_COLD_STORAGE,
@@ -432,7 +432,7 @@ app.post('/api/v6/storage/maintenance', async (c) => {
  * POST /api/v6/storage/evict
  * Evict old atoms from cold storage
  */
-app.post('/api/v6/storage/evict', async (c) => {
+app.post('/storage/evict', async (c) => {
   try {
     const storage = new R2ColdStorageEnhanced({
       R2_COLD_STORAGE: c.env.R2_COLD_STORAGE,
@@ -462,7 +462,7 @@ app.post('/api/v6/storage/evict', async (c) => {
  * GET /api/v6/health
  * Health check for v6.0 components
  */
-app.get('/api/v6/health', async (c) => {
+app.get('/health', async (c) => {
   return c.json({
     success: true,
     version: '6.0.0',
