@@ -28,15 +28,15 @@ jobs:
         with:
           fetch-depth: 0
       
+      - name: Install pnpm
+        run: npm install -g pnpm
+      
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
           cache-dependency-path: 'flarecog/pnpm-lock.yaml'
-      
-      - name: Install pnpm
-        run: npm install -g pnpm
       
       - name: Install dependencies
         working-directory: ./flarecog
@@ -80,15 +80,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
+      - name: Install pnpm
+        run: npm install -g pnpm
+      
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
           cache-dependency-path: 'flarecog/pnpm-lock.yaml'
-      
-      - name: Install pnpm
-        run: npm install -g pnpm
       
       - name: Install dependencies
         working-directory: ./flarecog
