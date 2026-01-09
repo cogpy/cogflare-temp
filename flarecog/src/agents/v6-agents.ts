@@ -62,33 +62,28 @@ export class RelevanceRealizationAgent implements MindAgent {
       
       const atoms = await response.json() as Atom[];
       atomsProcessed = atoms.length;
-      
-      // Update salience landscape
-      for (const atom of atoms) {
-        const salience = this.relevanceEngine.calculateSalience(atom);
-        this.relevanceEngine.updateSalienceLandscape(atom.id, salience);
-        changes++;
-      }
-      
-      // Update opponent processes based on current state
-      this.relevanceEngine.updateOpponentProcesses({
-        exploration: 0.5,
-        abstraction: 0.5,
-        breadth: 0.5,
-        stability: 0.5
-      });
-      
+
+      // Update salience landscape with all atoms at once
+      this.relevanceEngine.updateSalienceLandscape(atoms);
+      changes = atoms.length;
+
+      // Update opponent processes to maintain balance
+      this.relevanceEngine.updateOpponentProcess('exploration_exploitation', 'balance', 0.1);
+      this.relevanceEngine.updateOpponentProcess('abstraction_concreteness', 'balance', 0.1);
+      this.relevanceEngine.updateOpponentProcess('breadth_depth', 'balance', 0.1);
+      this.relevanceEngine.updateOpponentProcess('stability_plasticity', 'balance', 0.1);
+
       // Get optimal grip recommendations
       const grip = this.relevanceEngine.getOptimalGrip();
-      
+
       return {
         success: true,
         atomsProcessed,
         changes,
         metrics: {
-          focusAtoms: grip.focus.length,
-          exploreAtoms: grip.explore.length,
-          ignoreAtoms: grip.ignore.length,
+          focusAtoms: grip.focusAtoms.length,
+          exploreAtoms: grip.exploreAtoms.length,
+          ignoreAtoms: grip.ignoreAtoms.length,
           peakCount: this.relevanceEngine.getSalienceLandscape().peaks.length,
           valleyCount: this.relevanceEngine.getSalienceLandscape().valleys.length
         }

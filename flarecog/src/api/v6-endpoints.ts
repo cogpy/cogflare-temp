@@ -29,20 +29,20 @@ app.post('/query/distributed', async (c) => {
   try {
     const pattern = await c.req.json<QueryPattern>();
     
-    const queryEngine = new EnhancedDistributedQueryEngine({
-      CACHE: c.env.COORDINATION_CACHE,
-      ATOMSPACE_DO: c.env.ATOMSPACE
-    });
-    
+    const queryEngine = new EnhancedDistributedQueryEngine(
+      c.env.COORDINATION_CACHE,
+      c.env
+    );
+
     const result = await queryEngine.executeQuery(pattern);
-    
+
     return c.json({
       success: true,
       result,
       metadata: {
         atomCount: result.atoms.length,
         bindingCount: result.bindings.length,
-        cached: result.cached
+        hasMore: result.hasMore
       }
     });
   } catch (error) {
@@ -59,20 +59,31 @@ app.post('/query/distributed', async (c) => {
  */
 app.post('/query/traverse', async (c) => {
   try {
-    const { startAtomIds, direction, maxDepth, preFetch } = await c.req.json<{
-      startAtomIds: string[];
+    const { startAtomId, direction, maxDepth, preFetch } = await c.req.json<{
+      startAtomId: string;
       direction: 'incoming' | 'outgoing' | 'both';
       maxDepth: number;
       preFetch?: boolean;
     }>();
-    
-    const queryEngine = new EnhancedDistributedQueryEngine({
-      CACHE: c.env.COORDINATION_CACHE,
-      ATOMSPACE_DO: c.env.ATOMSPACE
+
+    const queryEngine = new EnhancedDistributedQueryEngine(
+      c.env.COORDINATION_CACHE,
+      c.env
+    );
+
+    // Fetch the starting atom from AtomSpace
+    const atomSpaceId = c.env.ATOMSPACE.idFromName('main');
+    const atomSpace = c.env.ATOMSPACE.get(atomSpaceId);
+
+    const response = await atomSpace.fetch(`https://internal/atoms/${startAtomId}`);
+    const startAtom = await response.json() as { id: string; type: string; name?: string; truthValue: any; attentionValue: any };
+
+    const result = await queryEngine.traverse(startAtom as any, {
+      direction,
+      maxDepth,
+      preFetch
     });
-    
-    const result = await queryEngine.traverse(startAtomIds, direction, maxDepth, preFetch);
-    
+
     return c.json({
       success: true,
       atoms: result,
@@ -98,20 +109,33 @@ app.post('/relevance/assess', async (c) => {
       atomIds: string[];
       context: RelevanceContext;
     }>();
-    
+
     const relevanceEngine = new RelevanceRealizationEngine();
-    
-    // Get atoms (simplified - in production would fetch from AtomSpace)
-    const atoms = []; // TODO: Fetch atoms from AtomSpace
-    
-    const assessments = atomIds.map(atomId => {
-      const atom = atoms.find(a => a.id === atomId);
-      if (!atom) return null;
-      
-      const relevance = relevanceEngine.assessRelevance(atom, context);
-      return { atomId, relevance };
-    }).filter(Boolean);
-    
+
+    // Update engine context if provided
+    if (context) {
+      relevanceEngine.updateContext(context);
+    }
+
+    // Fetch atoms from AtomSpace
+    const atomSpaceId = c.env.ATOMSPACE.idFromName('main');
+    const atomSpace = c.env.ATOMSPACE.get(atomSpaceId);
+
+    const response = await atomSpace.fetch('https://internal/atoms/batch', {
+      method: 'POST',
+      body: JSON.stringify({ ids: atomIds })
+    });
+
+    const atoms = await response.json() as Array<{ id: string; type: string; name?: string; truthValue: any; attentionValue: any }>;
+
+    // Assess relevance for each atom using realizeRelevance
+    const assessments = await Promise.all(
+      atoms.map(async (atom) => {
+        const relevance = await relevanceEngine.realizeRelevance(atom as any);
+        return { atomId: atom.id, relevance };
+      })
+    );
+
     return c.json({
       success: true,
       assessments

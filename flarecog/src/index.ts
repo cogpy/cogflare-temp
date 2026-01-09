@@ -6,10 +6,10 @@
 
 import { Hono } from "hono";
 import {
-	Env,
 	CognitiveDashboardData,
 	AtomSpaceResponse,
 } from "./types/cognitive";
+import { Env } from "./types/cognitive-v5";
 import { AtomSpace } from "./durable-objects/AtomSpace";
 import { MindAgent } from "./durable-objects/MindAgent";
 import v6Endpoints from './api/v6-endpoints';
