@@ -2,229 +2,335 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository Overview
+## Project Overview
 
-This is the Cloudflare Workers Templates repository containing a collection of starter templates for building full-stack applications on the Cloudflare Workers platform. The repository is structured as a monorepo with:
+**FlareCog** (Flare + Cognition) is a distributed cognitive architecture that implements OpenCog's AGI principles on Cloudflare's global edge network. It brings **ontogenetic entelechy** - the self-actualizing, self-organizing force that drives cognitive systems toward full AGI realization.
 
-- **Individual template directories** (each ending in `-template`)
-- **Custom CLI tool** (`cli/`) for template management and validation
-- **Turbo build system** for managing multiple projects
-- **Playwright E2E tests** for template validation
+### Core Mission
+
+- Create a **distributed hypergraph knowledge system** (AtomSpace) across Cloudflare's edge network
+- Enable **autonomous MindAgents** with emergent cognitive capabilities
+- Support **symbolic-neural hybrid reasoning** combining OpenCog principles with Workers AI
+- Implement **distributed coordination** for multi-node cognitive processing
+
+### Current Development Stage
+
+**Juvenile Stage** (71% Overall Actualization)
+- Ontological (Being): 80% - Foundation + Core + Cognitive layers operational
+- Teleological (Purpose): 75% - Clear roadmap, active AGI development
+- Cognitive (Thinking): 68% - PLN + Pattern Matching + Learning functional
+- Integrative (Coherence): 71% - Strong component integration
+- Evolutionary (Growth): 58% - Self-improvement framework in place
+
+## Tech Stack
+
+### Backend
+- **Runtime**: Cloudflare Workers (serverless edge computing)
+- **Language**: TypeScript 5.9
+- **API Framework**: Hono 4.8
+- **Persistent State**: Durable Objects (with SQLite), D1 Database
+- **Caching**: Cloudflare KV Namespace
+- **AI Integration**: Workers AI
+- **Build System**: Turbo 2.5 (monorepo orchestration)
+- **Testing**: Vitest 3.2 with @cloudflare/vitest-pool-workers
+
+### Frontend
+- **flarecog-admin**: Astro 5 + React 19 + Tailwind CSS
+- **flarecog-playground**: Vite + React 18 + Tailwind CSS
+
+### Supporting Tools
+- **Package Manager**: pnpm 10
+- **CLI**: Custom CLI tool (Commander.js)
+- **Python API Client**: flarecog-api
+- **E2E Testing**: Playwright 1.53
 
 ## Essential Commands
 
-### Development Commands
-
+### Development
 ```bash
-# Check all templates and code quality
-pnpm run check
-
-# Fix formatting and linting issues automatically
-pnpm run fix
-
-# Run all tests (includes template validation)
-pnpm run test
-
-# Run Playwright E2E tests
-pnpm run test:e2e
-
-# Run CLI tests specifically
-pnpm run test:cli
+pnpm run dev          # Start dev server (wrangler dev)
+pnpm run build        # Build TypeScript
+pnpm run deploy       # Deploy to Cloudflare Workers
+pnpm run check        # Check templates, lockfiles, formatting
+pnpm run fix          # Fix all auto-fixable issues
 ```
 
-### Template Management Commands
-
+### Testing
 ```bash
-# Lint all templates for compliance
-pnpm run check:templates
-
-# Fix template issues automatically
-pnpm run fix:templates
-
-# Generate npm lockfiles for all templates
-pnpm run fix:lockfiles
-
-# Validate live demo links
-pnpm run validate-live-demo-links
-
-# Validate Deploy to Cloudflare buttons
-pnpm run validate-d2c-buttons
+pnpm run test         # Run all tests (turbo + vitest)
+pnpm run test:cli     # Run CLI tests
+pnpm run test:e2e     # Playwright E2E tests (local)
+pnpm run test:e2e:live # E2E against live deployments
 ```
 
-### Deployment Commands
-
+### Template Management
 ```bash
-# Deploy all templates
-pnpm run deploy
-
-# Deploy live demos
-pnpm run deploy-live-demos
-
-# Upload templates to Cloudflare Templates API
-pnpm run upload
+pnpm run check:templates     # Lint templates for compliance
+pnpm run fix:templates       # Fix template issues
+pnpm run fix:lockfiles       # Generate npm lockfiles
+pnpm run deploy-live-demos   # Deploy live demos
+pnpm run upload              # Upload to Cloudflare API
 ```
 
-## Architecture Overview
+## Project Structure
 
-### Template Structure
+```
+/flarecog/
+├── flarecog/                    # Main cognitive platform worker
+│   ├── src/
+│   │   ├── index.ts             # Entry point (Hono router)
+│   │   ├── durable-objects/     # Stateful components
+│   │   │   ├── AtomSpace.ts     # Hypergraph knowledge store
+│   │   │   ├── MindAgent.ts     # Cognitive agents scheduler
+│   │   │   └── StorageNode.ts   # Distributed storage
+│   │   ├── core/                # Core cognitive systems
+│   │   │   ├── distributed/     # Distributed coordination
+│   │   │   └── attention/       # Attention allocation
+│   │   ├── cognitive/           # Cognitive algorithms
+│   │   │   ├── PLNReasoning.ts  # Probabilistic Logic Networks
+│   │   │   ├── ECANAttention.ts # Economic Attention Network
+│   │   │   ├── HTNPlannerIntegration.ts
+│   │   │   ├── SchemeKernel.ts  # Lisp interpreter
+│   │   │   ├── PatternMatcher.ts
+│   │   │   └── AIEnhancedReasoning.ts
+│   │   ├── api/
+│   │   │   └── v6-endpoints.ts  # REST API endpoints
+│   │   ├── types/
+│   │   │   └── cognitive.ts     # TypeScript definitions
+│   │   └── tests/               # Unit and integration tests
+│   ├── wrangler.json            # Worker configuration
+│   └── vitest.config.ts
+│
+├── flarecog-admin/              # Admin dashboard (Astro)
+├── flarecog-platform/           # Multi-tenant platform
+│   ├── platform-api/            # Tenant management API
+│   ├── dispatch-worker/         # Dispatch routing
+│   └── user-worker-template/    # Per-tenant worker template
+├── flarecog-playground/         # Interactive playground (Vite)
+├── flarecog-api/                # Python client library
+├── cli/                         # Template management CLI
+├── templates/                   # Cloudflare Workers templates
+├── playwright-tests/            # E2E tests
+├── docs/                        # Documentation
+├── turbo.json                   # Turbo build config
+└── pnpm-workspace.yaml          # Workspace config
+```
 
-Each template follows a consistent structure:
+## Core Cognitive Components
 
-- `package.json` with required Cloudflare metadata
-- `wrangler.json` or `wrangler.jsonc` (not `.toml`)
-- `README.md` with Deploy to Cloudflare button
-- TypeScript configuration
-- Worker source code typically in `src/`
+### 1. AtomSpace (Durable Object)
+Hypergraph knowledge representation - the foundation of FlareCog's cognition.
 
-### Custom CLI (`cli/`)
+**Location**: `flarecog/src/durable-objects/AtomSpace.ts`
 
-The repository includes a sophisticated CLI tool that:
+- **Nodes**: Concepts, predicates, numbers, schemas
+- **Links**: Inheritance, similarity, evaluation, execution
+- **Truth Values**: Probabilistic knowledge (strength, confidence)
+- **Attention Values**: STI/LTI/VLTI (Short/Long/Very-Long-Term Importance)
+- **Pattern Matching**: Inverted index for fast pattern queries
+- **Persistence**: SQLite in Durable Objects
 
-- **Validates** template configuration and structure
-- **Uploads** templates to Cloudflare's Templates API
-- **Deploys** live demos for each template
-- **Manages** dependencies across all templates
-- **Enforces** consistent standards via linting
+### 2. MindAgent (Durable Object)
+Autonomous cognitive agents that continuously process the AtomSpace.
 
-Key CLI commands used internally:
+**Location**: `flarecog/src/durable-objects/MindAgent.ts`
 
-- `templates lint` - Validate template compliance
-- `templates upload` - Upload to Templates API
-- `templates deploy-live-demos` - Deploy previews
+Eight agent types:
+- **ForgetAgent**: Memory decay and cleanup
+- **HebbianAgent**: Hebbian learning ("fire together, wire together")
+- **ImportanceSpreadingAgent**: Spreads attention through knowledge
+- **GoalAgent**: Goal management and pursuit
+- **ReasoningAgent**: Logical inference
+- **LearningAgent**: Adaptive behavior
+- **PlanningAgent**: Task decomposition
+- **PerceptionAgent**: Concept extraction
 
-### Build System
+### 3. PLN Reasoning Engine
+Probabilistic Logic Networks for uncertain inference.
 
-Uses Turbo for coordinated builds across templates:
+**Location**: `flarecog/src/cognitive/PLNReasoning.ts`
 
-- Parallel building of multiple templates
-- Caching for improved performance
-- Coordinated TypeScript compilation
+Inference rules: Deduction, Induction, Abduction, Modus Ponens, and more.
 
-## Template Requirements and Best Practices
+### 4. ECAN (Economic Attention Network)
+Economic model for attention allocation.
 
-### What Are Templates?
+**Location**: `flarecog/src/cognitive/ECANAttention.ts`
 
-Templates are high-quality, tangible use-case driven examples of applications built using Cloudflare Workers. They should be practical applications demonstrating technology, not sandboxed environments.
+- Three-level importance tracking (STI, LTI, VLTI)
+- Attention decay (forgetting)
+- Importance spreading
+- Rent collection mechanism
 
-### Package.json Requirements
+### 5. HTN Planner
+Hierarchical Task Network planning.
 
-Templates must include:
+**Location**: `flarecog/src/cognitive/HTNPlannerIntegration.ts`
 
-- `name` ending in `-template` (matching directory)
-- `description` (one-line summary, keep brief)
-- `deploy` script for Wrangler deployment
-- `cloudflare` metadata object with:
-  - `label` (Title Case name for dashboard display)
-  - `products` (max 3 Cloudflare products, focus on unique ones)
-  - `categories` (from: "starter", "storage", "ai")
-  - `preview_image_url` (16:9 aspect ratio, provided by Growth team)
-  - `publish: true` (only if template should appear in dashboard)
+- Task decomposition
+- Precondition validation
+- Dynamic replanning
 
-### Visual and Content Requirements
+### 6. Scheme Kernel
+Minimal Lisp interpreter for symbolic reasoning.
 
-- **Frontend Component**: Must have visual UI that clearly demonstrates functionality
-- **Preview Image**: Required 16:9 aspect ratio screenshot (minimum 500px width)
-- **README.md**: Must include:
-  - Deploy to Cloudflare button
-  - Getting started section with local development instructions
-  - Dashboard content section wrapped in `<!-- dash-content-start -->` and `<!-- dash-content-end -->`
-  - Screenshot of live application
-  - Description of products used with documentation links
+**Location**: `flarecog/src/cognitive/SchemeKernel.ts`
 
-### Technical Requirements
+- Lambda functions with lexical scoping
+- Atom/Scheme bidirectional conversion
 
-- **Package-lock.json**: Required for 80% faster module resolution
-- **Tests**: Mandatory minimum of 5 tests using vitest
-- **Worker Binding**: Every template must use at least one Worker binding
-- **API Router**: Use Hono unless project specifically needs different router
-- **Top-level Environment**: Bindings must be top-level for Deploy to Cloudflare compatibility
-- **Single Worker**: Cannot be monorepo, must be single Worker application
+### 7. Relevance Realization Engine
+Multi-dimensional relevance assessment (v6.0 feature).
 
-### Wrangler Configuration
+**Location**: `flarecog/src/core/RelevanceRealizationEngine.ts`
 
-- Must use `wrangler.json` or `wrangler.jsonc` format (not `.toml`)
-- Latest compatibility date
-- Observability and Smart Placement enabled by default
-- Source maps enabled for development
+Dimensions: Goal alignment, contextual fit, novelty, coherence, pragmatic value.
 
-### Code Standards and Best Practices
+### 8. Distributed Query Engine
+Cross-node coordination for distributed AtomSpace.
 
-- **TypeScript**: Required for all templates
-- **Framework Recommendations**: React + Vite, Next.js, React Router v7, or Astro
-- **Latest Versions**: Use latest Wrangler and compatibility date
-- **Comments**: Include educational comments explaining Cloudflare-specific features
-- **Workers Assets**: Use Workers Assets for frontend instead of Pages
-- **Naming**: Focus on use case, not underlying tech (e.g., "Astro AI Chat Bot" not "DO Template")
-- **No Experimental Features**: Use stable, current best practices
+**Location**: `flarecog/src/core/distributed/EnhancedDistributedQueryEngine.ts`
 
-### Secrets and Environment Variables
+- Consistent hashing for atom distribution
+- Multi-node synchronization
 
-- List all required secrets in README.md
-- Include where users can find appropriate values
-- Show missing configuration errors in deployed application UI
-- Environment variables requiring user updates must be documented
+## Cloudflare Bindings
 
-## Testing Strategy
+Configured in `flarecog/wrangler.json`:
 
-Templates are validated through:
+```json
+{
+  "durable_objects": {
+    "bindings": [
+      { "name": "ATOMSPACE", "class_name": "AtomSpace" },
+      { "name": "MIND_AGENT", "class_name": "MindAgent" }
+    ]
+  },
+  "d1_databases": [
+    { "binding": "COGNITIVE_DB", "database_name": "cogflare-cognitive-db" }
+  ],
+  "kv_namespaces": [
+    { "binding": "ATOM_CACHE" }
+  ],
+  "ai": { "binding": "AI" }
+}
+```
 
-- **Static analysis** via custom CLI linting
-- **Build validation** ensuring all templates compile
-- **E2E tests** via Playwright
-- **Live demo validation** ensuring deployed templates work
-- **Unit tests**: Minimum 5 tests required using vitest-pool-workers package
+## API Endpoints (v6)
 
-## Important Files
+**Location**: `flarecog/src/api/v6-endpoints.ts`
 
-- `templates.json` - Template registry with package hashes
-- `turbo.json` - Build configuration
-- `playwright.config.ts` - E2E test configuration
-- `pnpm-workspace.yaml` - Workspace configuration
+### AtomSpace Operations
+- `POST /api/v6/atoms` - Create atom
+- `GET /api/v6/atoms/:id` - Get atom by ID
+- `GET /api/v6/atoms` - List atoms with filters
+- `DELETE /api/v6/atoms/:id` - Delete atom
+- `POST /api/v6/links` - Create link between atoms
+
+### Cognitive Operations
+- `POST /api/v6/pln/infer` - Run PLN inference
+- `POST /api/v6/pattern/match` - Pattern matching query
+- `POST /api/v6/attention/spread` - Spread attention
+- `POST /api/v6/agents/run` - Trigger MindAgent execution
+
+### System Operations
+- `GET /api/v6/health` - Health check
+- `GET /api/v6/stats` - System statistics
 
 ## Development Workflow
 
-### General Development
+### Before Making Changes
+```bash
+pnpm run check    # Ensure clean state
+```
 
-1. **Before making changes**: Run `pnpm run check` to ensure clean state
-2. **After making changes**: Run `pnpm run fix` to auto-format and lint
-3. **Before committing**: Ensure `pnpm run test` passes
-4. **For new templates**: Follow the template requirements checklist in CONTRIBUTING.md
+### After Making Changes
+```bash
+pnpm run fix      # Auto-format and lint
+pnpm run test     # Run tests
+```
 
-### Template Creation Workflow
+### Cognitive Development Guidelines
 
-1. **Create directory**: Name must end with `-template`
-2. **Package.json setup**: Include all required Cloudflare metadata
-3. **Generate lockfile**: Run `pnpm run fix:lockfiles` to create package-lock.json
-4. **Add tests**: Minimum 5 tests using vitest
-5. **README content**: Include Deploy to Cloudflare button and dashboard content sections
-6. **Preview image**: Provide 16:9 screenshot for Growth team to upload
-7. **Validation**: Run `pnpm run check:templates` to ensure compliance
+1. **AtomSpace Modifications**: Always ensure atoms have valid truth values and attention values
+2. **MindAgent Changes**: Agents must be idempotent and handle concurrent execution
+3. **PLN Rules**: New inference rules must preserve truth value semantics
+4. **Distributed Operations**: Use D1CoordinationLayer for cross-node consistency
 
-## CLI Tool Architecture
+### Key Concepts
 
-The custom CLI (`cli/src/`) handles:
+- **Entelechy**: Self-actualizing force driving AGI realization
+- **Ontogenesis**: Self-generating, evolving cognitive systems
+- **Truth Values**: Probabilistic knowledge (strength 0-1, confidence 0-1)
+- **Attention Values**: Cognitive focus allocation
+  - **STI**: Short-Term Importance (working memory)
+  - **LTI**: Long-Term Importance (persistent relevance)
+  - **VLTI**: Very-Long-Term Importance (never forget)
 
-- Template discovery and validation
-- Cloudflare API integration
-- GitHub integration for PR workflows
-- Dependency management across templates
-- Automated deployment processes
+## Testing
 
-When working with templates, always use the provided CLI commands rather than manual processes to ensure consistency and compliance with repository standards.
+### Test Locations
+- `flarecog/src/tests/v6-tests.test.ts` - v6.0 component tests
+- `flarecog/src/tests/integration.test.ts` - Integration tests
+- `flarecog/src/cognitive/__tests__/` - Cognitive algorithm tests
+- `playwright-tests/` - E2E tests
 
-## Template Contribution FAQ
+### Running Specific Tests
+```bash
+cd flarecog && pnpm vitest run src/tests/v6-tests.test.ts
+```
 
-### What makes a good template?
+## Deployment
 
-- Demonstrates practical use case, not just technology showcase
-- Uses at least one Worker binding (D1, KV, R2, Durable Objects, etc.)
-- Has clear visual UI that shows what the template does
-- Follows Workers best practices with stable, non-experimental features
-- Includes comprehensive tests and documentation
+### Production Deployment
+```bash
+pnpm run deploy   # Deploys to flarecog.d-d1f.workers.dev
+```
 
-### Which frameworks are recommended?
+### GitHub Actions
+- Auto-deploys on push to main
+- Requires secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
 
-- React + Vite
-- Next.js
-- React Router v7 (new Remix)
-- Astro
+### Multi-Tenant Platform
+For deploying tenant-isolated instances:
+```bash
+cd flarecog-platform/platform-api && pnpm run deploy
+cd flarecog-platform/dispatch-worker && pnpm run deploy
+```
+
+## Important Files
+
+- `flarecog/wrangler.json` - Worker and bindings configuration
+- `flarecog/src/index.ts` - Main entry point
+- `flarecog/src/types/cognitive.ts` - Core type definitions
+- `turbo.json` - Build orchestration
+- `pnpm-workspace.yaml` - Workspace packages
+
+## Common Tasks
+
+### Adding a New Atom Type
+1. Update `flarecog/src/types/cognitive.ts` with new type
+2. Add handling in `AtomSpace.ts`
+3. Update pattern matcher if needed
+4. Add tests
+
+### Adding a New MindAgent
+1. Define agent in `flarecog/src/agents/v6-agents.ts`
+2. Implement logic in `MindAgent.ts`
+3. Register in agent scheduler
+4. Add tests
+
+### Adding a New PLN Rule
+1. Add rule to `PLNReasoning.ts`
+2. Implement truth value formula
+3. Add to inference engine
+4. Add tests with known truth values
+
+## Architecture Principles
+
+1. **Edge-First**: All computation at the edge for low latency
+2. **Stateful via Durable Objects**: AtomSpace persists across requests
+3. **Distributed by Design**: Multi-node coordination built-in
+4. **Hybrid AI**: Symbolic (PLN) + Neural (Workers AI) reasoning
+5. **Self-Organizing**: MindAgents operate autonomously
+6. **Observable**: Full metrics and tracing via Cloudflare
