@@ -177,7 +177,7 @@
       {
         "queue": "flarecog-consolidation-queue",
         "max_batch_size": 20,
-        "max_batch_timeout": 120
+        "max_batch_timeout": 60
       },
       {
         "queue": "flarecog-coordination-queue",
