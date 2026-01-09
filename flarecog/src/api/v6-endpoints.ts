@@ -1,6 +1,6 @@
 /**
  * FlareCog v6.0 API Endpoints
- * 
+ *
  * Integration layer for new v6.0 components:
  * - Enhanced Distributed Query Engine
  * - Relevance Realization Engine
@@ -16,6 +16,21 @@ import { RelevanceRealizationEngine, RelevanceContext } from '../core/RelevanceR
 import { WorkersForPlatformsIntegration, TenantConfig } from '../platforms/WorkersForPlatformsIntegration';
 import { CloudflareQueueIntegration, CognitiveTask } from '../optimizations/CloudflareQueueIntegration';
 import { R2ColdStorageEnhanced } from '../storage/R2ColdStorageEnhanced';
+import {
+  QueryPatternSchema,
+  TraverseRequestSchema,
+  RelevanceAssessRequestSchema,
+  TenantConfigSchema,
+  TenantQueryRequestSchema,
+  TenantAtomRequestSchema,
+  KnowledgeBaseCreateSchema,
+  CognitiveTaskSchema,
+  validate,
+  formatZodErrors,
+  toQueryPattern,
+  toRelevanceContext,
+  toCognitiveTask
+} from './v6-validation';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -27,8 +42,19 @@ const app = new Hono<{ Bindings: Env }>();
  */
 app.post('/query/distributed', async (c) => {
   try {
-    const pattern = await c.req.json<QueryPattern>();
-    
+    const body = await c.req.json();
+    const validation = validate(QueryPatternSchema, body);
+
+    if (!validation.success) {
+      return c.json({
+        success: false,
+        error: 'Validation failed',
+        details: formatZodErrors(validation.errors)
+      }, 400);
+    }
+
+    const pattern = toQueryPattern(validation.data);
+
     const queryEngine = new EnhancedDistributedQueryEngine(
       c.env.COORDINATION_CACHE,
       c.env
@@ -59,12 +85,18 @@ app.post('/query/distributed', async (c) => {
  */
 app.post('/query/traverse', async (c) => {
   try {
-    const { startAtomId, direction, maxDepth, preFetch } = await c.req.json<{
-      startAtomId: string;
-      direction: 'incoming' | 'outgoing' | 'both';
-      maxDepth: number;
-      preFetch?: boolean;
-    }>();
+    const body = await c.req.json();
+    const validation = validate(TraverseRequestSchema, body);
+
+    if (!validation.success) {
+      return c.json({
+        success: false,
+        error: 'Validation failed',
+        details: formatZodErrors(validation.errors)
+      }, 400);
+    }
+
+    const { startAtomId, direction, maxDepth, preFetch } = validation.data;
 
     const queryEngine = new EnhancedDistributedQueryEngine(
       c.env.COORDINATION_CACHE,
@@ -105,16 +137,24 @@ app.post('/query/traverse', async (c) => {
  */
 app.post('/relevance/assess', async (c) => {
   try {
-    const { atomIds, context } = await c.req.json<{
-      atomIds: string[];
-      context: RelevanceContext;
-    }>();
+    const body = await c.req.json();
+    const validation = validate(RelevanceAssessRequestSchema, body);
+
+    if (!validation.success) {
+      return c.json({
+        success: false,
+        error: 'Validation failed',
+        details: formatZodErrors(validation.errors)
+      }, 400);
+    }
+
+    const { atomIds, context } = validation.data;
 
     const relevanceEngine = new RelevanceRealizationEngine();
 
     // Update engine context if provided
     if (context) {
-      relevanceEngine.updateContext(context);
+      relevanceEngine.updateContext(toRelevanceContext(context));
     }
 
     // Fetch atoms from AtomSpace
@@ -198,8 +238,23 @@ app.get('/relevance/landscape', async (c) => {
  */
 app.post('/tenant/create', async (c) => {
   try {
-    const config = await c.req.json<Omit<TenantConfig, 'createdAt' | 'lastAccessedAt'>>();
-    
+    const body = await c.req.json();
+    const validation = validate(TenantConfigSchema, body);
+
+    if (!validation.success) {
+      return c.json({
+        success: false,
+        error: 'Validation failed',
+        details: formatZodErrors(validation.errors)
+      }, 400);
+    }
+
+    const config = {
+      ...validation.data,
+      createdAt: Date.now(),
+      lastAccessedAt: Date.now()
+    } as TenantConfig;
+
     const platformsIntegration = new WorkersForPlatformsIntegration({
       TENANT_REGISTRY: c.env.TENANT_REGISTRY,
       USAGE_TRACKER: c.env.USAGE_TRACKER,
@@ -207,9 +262,9 @@ app.post('/tenant/create', async (c) => {
       ATOMSPACE_DO: c.env.ATOMSPACE,
       TENANT_ATOMSPACE_DO: c.env.TENANT_ATOMSPACE_DO
     });
-    
+
     const tenantAtomSpace = await platformsIntegration.initializeTenant(config);
-    
+
     return c.json({
       success: true,
       tenant: tenantAtomSpace
@@ -229,8 +284,19 @@ app.post('/tenant/create', async (c) => {
 app.post('/tenant/:tenantId/query', async (c) => {
   try {
     const tenantId = c.req.param('tenantId');
-    const query = await c.req.json();
-    
+    const body = await c.req.json();
+    const validation = validate(TenantQueryRequestSchema, body);
+
+    if (!validation.success) {
+      return c.json({
+        success: false,
+        error: 'Validation failed',
+        details: formatZodErrors(validation.errors)
+      }, 400);
+    }
+
+    const query = validation.data;
+
     const platformsIntegration = new WorkersForPlatformsIntegration({
       TENANT_REGISTRY: c.env.TENANT_REGISTRY,
       USAGE_TRACKER: c.env.USAGE_TRACKER,
@@ -238,9 +304,9 @@ app.post('/tenant/:tenantId/query', async (c) => {
       ATOMSPACE_DO: c.env.ATOMSPACE,
       TENANT_ATOMSPACE_DO: c.env.TENANT_ATOMSPACE_DO
     });
-    
+
     const result = await platformsIntegration.executeQuery(tenantId, query);
-    
+
     return c.json({
       success: true,
       result
@@ -260,8 +326,19 @@ app.post('/tenant/:tenantId/query', async (c) => {
 app.post('/tenant/:tenantId/atom', async (c) => {
   try {
     const tenantId = c.req.param('tenantId');
-    const atom = await c.req.json();
-    
+    const body = await c.req.json();
+    const validation = validate(TenantAtomRequestSchema, body);
+
+    if (!validation.success) {
+      return c.json({
+        success: false,
+        error: 'Validation failed',
+        details: formatZodErrors(validation.errors)
+      }, 400);
+    }
+
+    const atom = validation.data;
+
     const platformsIntegration = new WorkersForPlatformsIntegration({
       TENANT_REGISTRY: c.env.TENANT_REGISTRY,
       USAGE_TRACKER: c.env.USAGE_TRACKER,
@@ -269,9 +346,9 @@ app.post('/tenant/:tenantId/atom', async (c) => {
       ATOMSPACE_DO: c.env.ATOMSPACE,
       TENANT_ATOMSPACE_DO: c.env.TENANT_ATOMSPACE_DO
     });
-    
+
     const result = await platformsIntegration.addAtom(tenantId, atom);
-    
+
     return c.json({
       success: true,
       atom: result
@@ -290,13 +367,19 @@ app.post('/tenant/:tenantId/atom', async (c) => {
  */
 app.post('/knowledge/create', async (c) => {
   try {
-    const { ownerTenantId, name, description, isPublic } = await c.req.json<{
-      ownerTenantId: string;
-      name: string;
-      description: string;
-      isPublic?: boolean;
-    }>();
-    
+    const body = await c.req.json();
+    const validation = validate(KnowledgeBaseCreateSchema, body);
+
+    if (!validation.success) {
+      return c.json({
+        success: false,
+        error: 'Validation failed',
+        details: formatZodErrors(validation.errors)
+      }, 400);
+    }
+
+    const { ownerTenantId, name, description, isPublic } = validation.data;
+
     const platformsIntegration = new WorkersForPlatformsIntegration({
       TENANT_REGISTRY: c.env.TENANT_REGISTRY,
       USAGE_TRACKER: c.env.USAGE_TRACKER,
@@ -304,14 +387,14 @@ app.post('/knowledge/create', async (c) => {
       ATOMSPACE_DO: c.env.ATOMSPACE,
       TENANT_ATOMSPACE_DO: c.env.TENANT_ATOMSPACE_DO
     });
-    
+
     const knowledgeBase = await platformsIntegration.createSharedKnowledgeBase(
       ownerTenantId,
       name,
       description,
       isPublic
     );
-    
+
     return c.json({
       success: true,
       knowledgeBase
@@ -332,8 +415,19 @@ app.post('/knowledge/create', async (c) => {
  */
 app.post('/task/enqueue', async (c) => {
   try {
-    const task = await c.req.json<CognitiveTask>();
-    
+    const body = await c.req.json();
+    const validation = validate(CognitiveTaskSchema, body);
+
+    if (!validation.success) {
+      return c.json({
+        success: false,
+        error: 'Validation failed',
+        details: formatZodErrors(validation.errors)
+      }, 400);
+    }
+
+    const task = toCognitiveTask(validation.data);
+
     const queueIntegration = new CloudflareQueueIntegration({
       COGNITIVE_QUEUE: c.env.COGNITIVE_QUEUE,
       INFERENCE_QUEUE: c.env.INFERENCE_QUEUE,
@@ -342,9 +436,9 @@ app.post('/task/enqueue', async (c) => {
       TASK_RESULTS: c.env.TASK_RESULTS,
       ATOMSPACE_DO: c.env.ATOMSPACE
     });
-    
+
     await queueIntegration.enqueueTask(task);
-    
+
     return c.json({
       success: true,
       taskId: task.id,
