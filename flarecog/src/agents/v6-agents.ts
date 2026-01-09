@@ -101,37 +101,37 @@ export class RelevanceRealizationAgent implements MindAgent {
 
 /**
  * Tiering Maintenance Agent
- * 
+ *
  * Manages storage tier migrations based on attention values
  * Runs periodically to optimize storage costs and performance
  */
 export class TieringMaintenanceAgent implements MindAgent {
   name = 'TieringMaintenanceAgent';
   priority = 30; // Low priority, background task
-  
+
   private storage?: R2ColdStorageEnhanced;
-  
+
   async run(env: Env): Promise<AgentResult> {
     try {
       if (!this.storage) {
         this.storage = new R2ColdStorageEnhanced({
-          R2_COLD_STORAGE: env.R2_ATOMSPACE,
-          KV_WARM_STORAGE: env.STORAGE_CACHE,
+          R2_COLD_STORAGE: env.R2_COLD_STORAGE,
+          KV_WARM_STORAGE: env.KV_WARM_STORAGE,
           ATOMSPACE_DO: env.ATOMSPACE,
-          STORAGE_METADATA: env.STORAGE_CACHE
+          STORAGE_METADATA: env.STORAGE_METADATA
         });
       }
-      
+
       // Run tiering maintenance
       await this.storage.runTieringMaintenance();
-      
+
       // Get metrics
       const metrics = this.storage.getMetrics();
-      
+
       return {
         success: true,
         atomsProcessed: metrics.hotTier.atomCount + metrics.warmTier.atomCount + metrics.coldTier.atomCount,
-        changes: metrics.migrations.hotToWarm + metrics.migrations.warmToCold + 
+        changes: metrics.migrations.hotToWarm + metrics.migrations.warmToCold +
                  metrics.migrations.coldToWarm + metrics.migrations.warmToHot,
         metrics: {
           hotTierAtoms: metrics.hotTier.atomCount,
@@ -153,39 +153,39 @@ export class TieringMaintenanceAgent implements MindAgent {
 
 /**
  * Distributed Sync Agent
- * 
+ *
  * Coordinates synchronization of distributed AtomSpace nodes
  * Ensures eventual consistency across the edge network
  */
 export class DistributedSyncAgent implements MindAgent {
   name = 'DistributedSyncAgent';
   priority = 60; // Medium priority
-  
+
   private queueIntegration?: CloudflareQueueIntegration;
-  
+
   async run(env: Env): Promise<AgentResult> {
     try {
       if (!this.queueIntegration) {
         this.queueIntegration = new CloudflareQueueIntegration({
           COGNITIVE_QUEUE: env.COGNITIVE_QUEUE,
-          INFERENCE_QUEUE: env.COGNITIVE_QUEUE,
-          CONSOLIDATION_QUEUE: env.COGNITIVE_QUEUE,
-          COORDINATION_QUEUE: env.COGNITIVE_QUEUE,
-          TASK_RESULTS: env.QUEUE_STATS,
+          INFERENCE_QUEUE: env.INFERENCE_QUEUE,
+          CONSOLIDATION_QUEUE: env.CONSOLIDATION_QUEUE,
+          COORDINATION_QUEUE: env.COORDINATION_QUEUE,
+          TASK_RESULTS: env.TASK_RESULTS,
           ATOMSPACE_DO: env.ATOMSPACE
         });
       }
-      
+
       // Get list of distributed nodes (simplified - in production would query registry)
       const nodes = ['node-1', 'node-2', 'node-3'];
-      
+
       // Schedule sync tasks
       await this.queueIntegration.scheduleDistributedSync(
         nodes.slice(0, -1),
         nodes[nodes.length - 1],
         60000 // 1 minute interval
       );
-      
+
       return {
         success: true,
         atomsProcessed: 0,
@@ -208,42 +208,42 @@ export class DistributedSyncAgent implements MindAgent {
 
 /**
  * Federated Learning Agent
- * 
+ *
  * Aggregates learning results from multiple tenants
  * Implements privacy-preserving federated learning
  */
 export class FederatedLearningAgent implements MindAgent {
   name = 'FederatedLearningAgent';
   priority = 50; // Medium priority
-  
+
   private platformsIntegration?: WorkersForPlatformsIntegration;
-  
+
   async run(env: Env): Promise<AgentResult> {
     try {
       if (!this.platformsIntegration) {
         this.platformsIntegration = new WorkersForPlatformsIntegration({
-          TENANT_REGISTRY: env.INSTANCE_REGISTRY,
-          USAGE_TRACKER: env.QUEUE_STATS,
-          SHARED_KNOWLEDGE: env.SYNERGY_STATE,
+          TENANT_REGISTRY: env.TENANT_REGISTRY,
+          USAGE_TRACKER: env.USAGE_TRACKER,
+          SHARED_KNOWLEDGE: env.SHARED_KNOWLEDGE,
           ATOMSPACE_DO: env.ATOMSPACE,
-          TENANT_ATOMSPACE_DO: env.ATOMSPACE
+          TENANT_ATOMSPACE_DO: env.TENANT_ATOMSPACE_DO
         });
       }
-      
+
       // Get active federated learning configurations (simplified)
       const configId = 'federated:default';
-      
+
       // Collect local results from participating tenants (simplified)
       const localResults = new Map<string, any>();
       localResults.set('tenant-1', { patterns: [], confidence: 0.8 });
       localResults.set('tenant-2', { patterns: [], confidence: 0.85 });
-      
+
       // Aggregate results
       const aggregated = await this.platformsIntegration.aggregateFederatedLearning(
         configId,
         localResults
       );
-      
+
       return {
         success: true,
         atomsProcessed: localResults.size,
@@ -266,35 +266,35 @@ export class FederatedLearningAgent implements MindAgent {
 
 /**
  * Memory Consolidation Agent
- * 
+ *
  * Schedules and manages memory consolidation tasks
  * Implements sleep-like memory consolidation phases
  */
 export class MemoryConsolidationAgent implements MindAgent {
   name = 'MemoryConsolidationAgent';
   priority = 40; // Low-medium priority
-  
+
   private queueIntegration?: CloudflareQueueIntegration;
-  
+
   async run(env: Env): Promise<AgentResult> {
     try {
       if (!this.queueIntegration) {
         this.queueIntegration = new CloudflareQueueIntegration({
           COGNITIVE_QUEUE: env.COGNITIVE_QUEUE,
-          INFERENCE_QUEUE: env.COGNITIVE_QUEUE,
-          CONSOLIDATION_QUEUE: env.COGNITIVE_QUEUE,
-          COORDINATION_QUEUE: env.COGNITIVE_QUEUE,
-          TASK_RESULTS: env.QUEUE_STATS,
+          INFERENCE_QUEUE: env.INFERENCE_QUEUE,
+          CONSOLIDATION_QUEUE: env.CONSOLIDATION_QUEUE,
+          COORDINATION_QUEUE: env.COORDINATION_QUEUE,
+          TASK_RESULTS: env.TASK_RESULTS,
           ATOMSPACE_DO: env.ATOMSPACE
         });
       }
-      
+
       // Schedule recurring consolidation phases
       await this.queueIntegration.scheduleRecurringConsolidation(
         'main',
         3600000 // 1 hour interval
       );
-      
+
       return {
         success: true,
         atomsProcessed: 0,

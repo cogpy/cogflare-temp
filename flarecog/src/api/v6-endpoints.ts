@@ -487,19 +487,132 @@ app.post('/storage/evict', async (c) => {
  * Health check for v6.0 components
  */
 app.get('/health', async (c) => {
+  const healthChecks: Record<string, { status: string; latency?: number; error?: string }> = {};
+  const startTime = Date.now();
+
+  // Check AtomSpace connectivity
+  try {
+    const atomSpaceStart = Date.now();
+    const atomSpaceId = c.env.ATOMSPACE.idFromName('main');
+    const atomSpace = c.env.ATOMSPACE.get(atomSpaceId);
+    await atomSpace.fetch('https://internal/ping');
+    healthChecks.atomspace = { status: 'healthy', latency: Date.now() - atomSpaceStart };
+  } catch (error) {
+    healthChecks.atomspace = { status: 'unhealthy', error: error instanceof Error ? error.message : 'Connection failed' };
+  }
+
+  // Check KV store (COORDINATION_CACHE)
+  try {
+    const kvStart = Date.now();
+    await c.env.COORDINATION_CACHE?.get('health-check');
+    healthChecks.kvStore = { status: 'healthy', latency: Date.now() - kvStart };
+  } catch (error) {
+    healthChecks.kvStore = { status: 'unhealthy', error: error instanceof Error ? error.message : 'Connection failed' };
+  }
+
+  // Check R2 Cold Storage
+  try {
+    const r2Start = Date.now();
+    await c.env.R2_COLD_STORAGE?.head('health-check');
+    healthChecks.r2Storage = { status: 'healthy', latency: Date.now() - r2Start };
+  } catch (error) {
+    healthChecks.r2Storage = { status: 'unhealthy', error: error instanceof Error ? error.message : 'Connection failed' };
+  }
+
+  // Check AI binding
+  try {
+    healthChecks.workersAI = { status: c.env.AI ? 'healthy' : 'unavailable' };
+  } catch {
+    healthChecks.workersAI = { status: 'unavailable' };
+  }
+
+  // Check Vectorize
+  try {
+    healthChecks.vectorize = { status: c.env.VECTORIZE ? 'healthy' : 'unavailable' };
+  } catch {
+    healthChecks.vectorize = { status: 'unavailable' };
+  }
+
+  // Determine overall status
+  const unhealthyComponents = Object.values(healthChecks).filter(h => h.status === 'unhealthy');
+  const overallStatus = unhealthyComponents.length === 0 ? 'healthy' :
+                        unhealthyComponents.length < 3 ? 'degraded' : 'unhealthy';
+
   return c.json({
-    success: true,
+    success: overallStatus !== 'unhealthy',
     version: '6.0.0',
-    status: 'healthy',
+    status: overallStatus,
     components: {
-      distributedQuery: 'operational',
+      distributedQuery: healthChecks.atomspace?.status === 'healthy' ? 'operational' : 'degraded',
       relevanceRealization: 'operational',
-      multiTenant: 'operational',
+      multiTenant: healthChecks.kvStore?.status === 'healthy' ? 'operational' : 'degraded',
       queueProcessing: 'operational',
-      tieredStorage: 'operational'
+      tieredStorage: healthChecks.r2Storage?.status === 'healthy' ? 'operational' : 'degraded',
+      workersAI: healthChecks.workersAI?.status === 'healthy' ? 'operational' : 'unavailable',
+      vectorize: healthChecks.vectorize?.status === 'healthy' ? 'operational' : 'unavailable'
     },
+    healthChecks,
+    totalLatency: Date.now() - startTime,
     timestamp: Date.now()
   });
+});
+
+/**
+ * GET /api/v6/metrics
+ * Get system metrics for monitoring
+ */
+app.get('/metrics', async (c) => {
+  try {
+    // Collect metrics from various sources
+    const metrics: Record<string, any> = {
+      timestamp: Date.now(),
+      version: '6.0.0'
+    };
+
+    // Get AtomSpace metrics
+    try {
+      const atomSpaceId = c.env.ATOMSPACE.idFromName('main');
+      const atomSpace = c.env.ATOMSPACE.get(atomSpaceId);
+      const response = await atomSpace.fetch('https://internal/metrics');
+      metrics.atomspace = await response.json();
+    } catch {
+      metrics.atomspace = { error: 'unavailable' };
+    }
+
+    // Get storage metrics
+    try {
+      const storage = new R2ColdStorageEnhanced({
+        R2_COLD_STORAGE: c.env.R2_COLD_STORAGE,
+        KV_WARM_STORAGE: c.env.KV_WARM_STORAGE,
+        ATOMSPACE_DO: c.env.ATOMSPACE,
+        STORAGE_METADATA: c.env.STORAGE_METADATA
+      });
+      metrics.storage = storage.getMetrics();
+    } catch {
+      metrics.storage = { error: 'unavailable' };
+    }
+
+    // Get relevance engine state
+    try {
+      const relevanceEngine = new RelevanceRealizationEngine();
+      metrics.relevance = {
+        landscape: relevanceEngine.getSalienceLandscape(),
+        grip: relevanceEngine.getOptimalGrip()
+      };
+    } catch {
+      metrics.relevance = { error: 'unavailable' };
+    }
+
+    return c.json({
+      success: true,
+      metrics
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
 });
 
 export default app;
