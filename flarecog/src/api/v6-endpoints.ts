@@ -1,6 +1,6 @@
 /**
  * FlareCog v6.0 API Endpoints
- * 
+ *
  * Integration layer for new v6.0 components:
  * - Enhanced Distributed Query Engine
  * - Relevance Realization Engine
@@ -16,6 +16,21 @@ import { RelevanceRealizationEngine, RelevanceContext } from '../core/RelevanceR
 import { WorkersForPlatformsIntegration, TenantConfig } from '../platforms/WorkersForPlatformsIntegration';
 import { CloudflareQueueIntegration, CognitiveTask } from '../optimizations/CloudflareQueueIntegration';
 import { R2ColdStorageEnhanced } from '../storage/R2ColdStorageEnhanced';
+import {
+  QueryPatternSchema,
+  TraverseRequestSchema,
+  RelevanceAssessRequestSchema,
+  TenantConfigSchema,
+  TenantQueryRequestSchema,
+  TenantAtomRequestSchema,
+  KnowledgeBaseCreateSchema,
+  CognitiveTaskSchema,
+  validate,
+  formatZodErrors,
+  toQueryPattern,
+  toRelevanceContext,
+  toCognitiveTask
+} from './v6-validation';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -27,22 +42,33 @@ const app = new Hono<{ Bindings: Env }>();
  */
 app.post('/query/distributed', async (c) => {
   try {
-    const pattern = await c.req.json<QueryPattern>();
-    
-    const queryEngine = new EnhancedDistributedQueryEngine({
-      CACHE: c.env.COORDINATION_CACHE,
-      ATOMSPACE_DO: c.env.ATOMSPACE
-    });
-    
+    const body = await c.req.json();
+    const validation = validate(QueryPatternSchema, body);
+
+    if (!validation.success) {
+      return c.json({
+        success: false,
+        error: 'Validation failed',
+        details: formatZodErrors(validation.errors)
+      }, 400);
+    }
+
+    const pattern = toQueryPattern(validation.data);
+
+    const queryEngine = new EnhancedDistributedQueryEngine(
+      c.env.COORDINATION_CACHE,
+      c.env
+    );
+
     const result = await queryEngine.executeQuery(pattern);
-    
+
     return c.json({
       success: true,
       result,
       metadata: {
         atomCount: result.atoms.length,
         bindingCount: result.bindings.length,
-        cached: result.cached
+        hasMore: result.hasMore
       }
     });
   } catch (error) {
@@ -59,20 +85,37 @@ app.post('/query/distributed', async (c) => {
  */
 app.post('/query/traverse', async (c) => {
   try {
-    const { startAtomIds, direction, maxDepth, preFetch } = await c.req.json<{
-      startAtomIds: string[];
-      direction: 'incoming' | 'outgoing' | 'both';
-      maxDepth: number;
-      preFetch?: boolean;
-    }>();
-    
-    const queryEngine = new EnhancedDistributedQueryEngine({
-      CACHE: c.env.COORDINATION_CACHE,
-      ATOMSPACE_DO: c.env.ATOMSPACE
+    const body = await c.req.json();
+    const validation = validate(TraverseRequestSchema, body);
+
+    if (!validation.success) {
+      return c.json({
+        success: false,
+        error: 'Validation failed',
+        details: formatZodErrors(validation.errors)
+      }, 400);
+    }
+
+    const { startAtomId, direction, maxDepth, preFetch } = validation.data;
+
+    const queryEngine = new EnhancedDistributedQueryEngine(
+      c.env.COORDINATION_CACHE,
+      c.env
+    );
+
+    // Fetch the starting atom from AtomSpace
+    const atomSpaceId = c.env.ATOMSPACE.idFromName('main');
+    const atomSpace = c.env.ATOMSPACE.get(atomSpaceId);
+
+    const response = await atomSpace.fetch(`https://internal/atoms/${startAtomId}`);
+    const startAtom = await response.json() as { id: string; type: string; name?: string; truthValue: any; attentionValue: any };
+
+    const result = await queryEngine.traverse(startAtom as any, {
+      direction,
+      maxDepth,
+      preFetch
     });
-    
-    const result = await queryEngine.traverse(startAtomIds, direction, maxDepth, preFetch);
-    
+
     return c.json({
       success: true,
       atoms: result,
@@ -94,24 +137,45 @@ app.post('/query/traverse', async (c) => {
  */
 app.post('/relevance/assess', async (c) => {
   try {
-    const { atomIds, context } = await c.req.json<{
-      atomIds: string[];
-      context: RelevanceContext;
-    }>();
-    
+    const body = await c.req.json();
+    const validation = validate(RelevanceAssessRequestSchema, body);
+
+    if (!validation.success) {
+      return c.json({
+        success: false,
+        error: 'Validation failed',
+        details: formatZodErrors(validation.errors)
+      }, 400);
+    }
+
+    const { atomIds, context } = validation.data;
+
     const relevanceEngine = new RelevanceRealizationEngine();
-    
-    // Get atoms (simplified - in production would fetch from AtomSpace)
-    const atoms = []; // TODO: Fetch atoms from AtomSpace
-    
-    const assessments = atomIds.map(atomId => {
-      const atom = atoms.find(a => a.id === atomId);
-      if (!atom) return null;
-      
-      const relevance = relevanceEngine.assessRelevance(atom, context);
-      return { atomId, relevance };
-    }).filter(Boolean);
-    
+
+    // Update engine context if provided
+    if (context) {
+      relevanceEngine.updateContext(toRelevanceContext(context));
+    }
+
+    // Fetch atoms from AtomSpace
+    const atomSpaceId = c.env.ATOMSPACE.idFromName('main');
+    const atomSpace = c.env.ATOMSPACE.get(atomSpaceId);
+
+    const response = await atomSpace.fetch('https://internal/atoms/batch', {
+      method: 'POST',
+      body: JSON.stringify({ ids: atomIds })
+    });
+
+    const atoms = await response.json() as Array<{ id: string; type: string; name?: string; truthValue: any; attentionValue: any }>;
+
+    // Assess relevance for each atom using realizeRelevance
+    const assessments = await Promise.all(
+      atoms.map(async (atom) => {
+        const relevance = await relevanceEngine.realizeRelevance(atom as any);
+        return { atomId: atom.id, relevance };
+      })
+    );
+
     return c.json({
       success: true,
       assessments
@@ -174,8 +238,23 @@ app.get('/relevance/landscape', async (c) => {
  */
 app.post('/tenant/create', async (c) => {
   try {
-    const config = await c.req.json<Omit<TenantConfig, 'createdAt' | 'lastAccessedAt'>>();
-    
+    const body = await c.req.json();
+    const validation = validate(TenantConfigSchema, body);
+
+    if (!validation.success) {
+      return c.json({
+        success: false,
+        error: 'Validation failed',
+        details: formatZodErrors(validation.errors)
+      }, 400);
+    }
+
+    const config = {
+      ...validation.data,
+      createdAt: Date.now(),
+      lastAccessedAt: Date.now()
+    } as TenantConfig;
+
     const platformsIntegration = new WorkersForPlatformsIntegration({
       TENANT_REGISTRY: c.env.TENANT_REGISTRY,
       USAGE_TRACKER: c.env.USAGE_TRACKER,
@@ -183,9 +262,9 @@ app.post('/tenant/create', async (c) => {
       ATOMSPACE_DO: c.env.ATOMSPACE,
       TENANT_ATOMSPACE_DO: c.env.TENANT_ATOMSPACE_DO
     });
-    
+
     const tenantAtomSpace = await platformsIntegration.initializeTenant(config);
-    
+
     return c.json({
       success: true,
       tenant: tenantAtomSpace
@@ -205,8 +284,19 @@ app.post('/tenant/create', async (c) => {
 app.post('/tenant/:tenantId/query', async (c) => {
   try {
     const tenantId = c.req.param('tenantId');
-    const query = await c.req.json();
-    
+    const body = await c.req.json();
+    const validation = validate(TenantQueryRequestSchema, body);
+
+    if (!validation.success) {
+      return c.json({
+        success: false,
+        error: 'Validation failed',
+        details: formatZodErrors(validation.errors)
+      }, 400);
+    }
+
+    const query = validation.data;
+
     const platformsIntegration = new WorkersForPlatformsIntegration({
       TENANT_REGISTRY: c.env.TENANT_REGISTRY,
       USAGE_TRACKER: c.env.USAGE_TRACKER,
@@ -214,9 +304,9 @@ app.post('/tenant/:tenantId/query', async (c) => {
       ATOMSPACE_DO: c.env.ATOMSPACE,
       TENANT_ATOMSPACE_DO: c.env.TENANT_ATOMSPACE_DO
     });
-    
+
     const result = await platformsIntegration.executeQuery(tenantId, query);
-    
+
     return c.json({
       success: true,
       result
@@ -236,8 +326,19 @@ app.post('/tenant/:tenantId/query', async (c) => {
 app.post('/tenant/:tenantId/atom', async (c) => {
   try {
     const tenantId = c.req.param('tenantId');
-    const atom = await c.req.json();
-    
+    const body = await c.req.json();
+    const validation = validate(TenantAtomRequestSchema, body);
+
+    if (!validation.success) {
+      return c.json({
+        success: false,
+        error: 'Validation failed',
+        details: formatZodErrors(validation.errors)
+      }, 400);
+    }
+
+    const atom = validation.data;
+
     const platformsIntegration = new WorkersForPlatformsIntegration({
       TENANT_REGISTRY: c.env.TENANT_REGISTRY,
       USAGE_TRACKER: c.env.USAGE_TRACKER,
@@ -245,9 +346,9 @@ app.post('/tenant/:tenantId/atom', async (c) => {
       ATOMSPACE_DO: c.env.ATOMSPACE,
       TENANT_ATOMSPACE_DO: c.env.TENANT_ATOMSPACE_DO
     });
-    
+
     const result = await platformsIntegration.addAtom(tenantId, atom);
-    
+
     return c.json({
       success: true,
       atom: result
@@ -266,13 +367,19 @@ app.post('/tenant/:tenantId/atom', async (c) => {
  */
 app.post('/knowledge/create', async (c) => {
   try {
-    const { ownerTenantId, name, description, isPublic } = await c.req.json<{
-      ownerTenantId: string;
-      name: string;
-      description: string;
-      isPublic?: boolean;
-    }>();
-    
+    const body = await c.req.json();
+    const validation = validate(KnowledgeBaseCreateSchema, body);
+
+    if (!validation.success) {
+      return c.json({
+        success: false,
+        error: 'Validation failed',
+        details: formatZodErrors(validation.errors)
+      }, 400);
+    }
+
+    const { ownerTenantId, name, description, isPublic } = validation.data;
+
     const platformsIntegration = new WorkersForPlatformsIntegration({
       TENANT_REGISTRY: c.env.TENANT_REGISTRY,
       USAGE_TRACKER: c.env.USAGE_TRACKER,
@@ -280,14 +387,14 @@ app.post('/knowledge/create', async (c) => {
       ATOMSPACE_DO: c.env.ATOMSPACE,
       TENANT_ATOMSPACE_DO: c.env.TENANT_ATOMSPACE_DO
     });
-    
+
     const knowledgeBase = await platformsIntegration.createSharedKnowledgeBase(
       ownerTenantId,
       name,
       description,
       isPublic
     );
-    
+
     return c.json({
       success: true,
       knowledgeBase
@@ -308,8 +415,19 @@ app.post('/knowledge/create', async (c) => {
  */
 app.post('/task/enqueue', async (c) => {
   try {
-    const task = await c.req.json<CognitiveTask>();
-    
+    const body = await c.req.json();
+    const validation = validate(CognitiveTaskSchema, body);
+
+    if (!validation.success) {
+      return c.json({
+        success: false,
+        error: 'Validation failed',
+        details: formatZodErrors(validation.errors)
+      }, 400);
+    }
+
+    const task = toCognitiveTask(validation.data);
+
     const queueIntegration = new CloudflareQueueIntegration({
       COGNITIVE_QUEUE: c.env.COGNITIVE_QUEUE,
       INFERENCE_QUEUE: c.env.INFERENCE_QUEUE,
@@ -318,9 +436,9 @@ app.post('/task/enqueue', async (c) => {
       TASK_RESULTS: c.env.TASK_RESULTS,
       ATOMSPACE_DO: c.env.ATOMSPACE
     });
-    
+
     await queueIntegration.enqueueTask(task);
-    
+
     return c.json({
       success: true,
       taskId: task.id,
@@ -463,19 +581,132 @@ app.post('/storage/evict', async (c) => {
  * Health check for v6.0 components
  */
 app.get('/health', async (c) => {
+  const healthChecks: Record<string, { status: string; latency?: number; error?: string }> = {};
+  const startTime = Date.now();
+
+  // Check AtomSpace connectivity
+  try {
+    const atomSpaceStart = Date.now();
+    const atomSpaceId = c.env.ATOMSPACE.idFromName('main');
+    const atomSpace = c.env.ATOMSPACE.get(atomSpaceId);
+    await atomSpace.fetch('https://internal/ping');
+    healthChecks.atomspace = { status: 'healthy', latency: Date.now() - atomSpaceStart };
+  } catch (error) {
+    healthChecks.atomspace = { status: 'unhealthy', error: error instanceof Error ? error.message : 'Connection failed' };
+  }
+
+  // Check KV store (COORDINATION_CACHE)
+  try {
+    const kvStart = Date.now();
+    await c.env.COORDINATION_CACHE?.get('health-check');
+    healthChecks.kvStore = { status: 'healthy', latency: Date.now() - kvStart };
+  } catch (error) {
+    healthChecks.kvStore = { status: 'unhealthy', error: error instanceof Error ? error.message : 'Connection failed' };
+  }
+
+  // Check R2 Cold Storage
+  try {
+    const r2Start = Date.now();
+    await c.env.R2_COLD_STORAGE?.head('health-check');
+    healthChecks.r2Storage = { status: 'healthy', latency: Date.now() - r2Start };
+  } catch (error) {
+    healthChecks.r2Storage = { status: 'unhealthy', error: error instanceof Error ? error.message : 'Connection failed' };
+  }
+
+  // Check AI binding
+  try {
+    healthChecks.workersAI = { status: c.env.AI ? 'healthy' : 'unavailable' };
+  } catch {
+    healthChecks.workersAI = { status: 'unavailable' };
+  }
+
+  // Check Vectorize
+  try {
+    healthChecks.vectorize = { status: c.env.VECTORIZE ? 'healthy' : 'unavailable' };
+  } catch {
+    healthChecks.vectorize = { status: 'unavailable' };
+  }
+
+  // Determine overall status
+  const unhealthyComponents = Object.values(healthChecks).filter(h => h.status === 'unhealthy');
+  const overallStatus = unhealthyComponents.length === 0 ? 'healthy' :
+                        unhealthyComponents.length < 3 ? 'degraded' : 'unhealthy';
+
   return c.json({
-    success: true,
+    success: overallStatus !== 'unhealthy',
     version: '6.0.0',
-    status: 'healthy',
+    status: overallStatus,
     components: {
-      distributedQuery: 'operational',
+      distributedQuery: healthChecks.atomspace?.status === 'healthy' ? 'operational' : 'degraded',
       relevanceRealization: 'operational',
-      multiTenant: 'operational',
+      multiTenant: healthChecks.kvStore?.status === 'healthy' ? 'operational' : 'degraded',
       queueProcessing: 'operational',
-      tieredStorage: 'operational'
+      tieredStorage: healthChecks.r2Storage?.status === 'healthy' ? 'operational' : 'degraded',
+      workersAI: healthChecks.workersAI?.status === 'healthy' ? 'operational' : 'unavailable',
+      vectorize: healthChecks.vectorize?.status === 'healthy' ? 'operational' : 'unavailable'
     },
+    healthChecks,
+    totalLatency: Date.now() - startTime,
     timestamp: Date.now()
   });
+});
+
+/**
+ * GET /api/v6/metrics
+ * Get system metrics for monitoring
+ */
+app.get('/metrics', async (c) => {
+  try {
+    // Collect metrics from various sources
+    const metrics: Record<string, any> = {
+      timestamp: Date.now(),
+      version: '6.0.0'
+    };
+
+    // Get AtomSpace metrics
+    try {
+      const atomSpaceId = c.env.ATOMSPACE.idFromName('main');
+      const atomSpace = c.env.ATOMSPACE.get(atomSpaceId);
+      const response = await atomSpace.fetch('https://internal/metrics');
+      metrics.atomspace = await response.json();
+    } catch {
+      metrics.atomspace = { error: 'unavailable' };
+    }
+
+    // Get storage metrics
+    try {
+      const storage = new R2ColdStorageEnhanced({
+        R2_COLD_STORAGE: c.env.R2_COLD_STORAGE,
+        KV_WARM_STORAGE: c.env.KV_WARM_STORAGE,
+        ATOMSPACE_DO: c.env.ATOMSPACE,
+        STORAGE_METADATA: c.env.STORAGE_METADATA
+      });
+      metrics.storage = storage.getMetrics();
+    } catch {
+      metrics.storage = { error: 'unavailable' };
+    }
+
+    // Get relevance engine state
+    try {
+      const relevanceEngine = new RelevanceRealizationEngine();
+      metrics.relevance = {
+        landscape: relevanceEngine.getSalienceLandscape(),
+        grip: relevanceEngine.getOptimalGrip()
+      };
+    } catch {
+      metrics.relevance = { error: 'unavailable' };
+    }
+
+    return c.json({
+      success: true,
+      metrics
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
 });
 
 export default app;

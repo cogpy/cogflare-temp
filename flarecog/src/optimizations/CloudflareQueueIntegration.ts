@@ -1,6 +1,6 @@
 /**
  * Cloudflare Queue Integration for FlareCog
- * 
+ *
  * Asynchronous cognitive processing using Cloudflare Queues
  * Enables background processing of:
  * - Long-running inference chains
@@ -9,6 +9,8 @@
  * - Distributed coordination
  * - Federated learning aggregation
  */
+
+import type { Queue, KVNamespace, DurableObjectNamespace } from '@cloudflare/workers-types';
 
 export interface CognitiveTask {
   id: string;
@@ -75,10 +77,10 @@ export interface LearningTask {
 export class CloudflareQueueIntegration {
   constructor(
     private env: {
-      COGNITIVE_QUEUE: Queue;
-      INFERENCE_QUEUE: Queue;
-      CONSOLIDATION_QUEUE: Queue;
-      COORDINATION_QUEUE: Queue;
+      COGNITIVE_QUEUE: Queue<unknown>;
+      INFERENCE_QUEUE: Queue<unknown>;
+      CONSOLIDATION_QUEUE: Queue<unknown>;
+      COORDINATION_QUEUE: Queue<unknown>;
       TASK_RESULTS: KVNamespace;
       ATOMSPACE_DO: DurableObjectNamespace;
     }
@@ -89,7 +91,7 @@ export class CloudflareQueueIntegration {
    */
   async enqueueTask(task: CognitiveTask): Promise<void> {
     const queue = this.selectQueue(task.type);
-    
+
     await queue.send({
       ...task,
       enqueuedAt: Date.now()
@@ -97,6 +99,44 @@ export class CloudflareQueueIntegration {
       contentType: 'json',
       delaySeconds: task.scheduledFor ? Math.max(0, (task.scheduledFor - Date.now()) / 1000) : 0
     });
+  }
+
+  /**
+   * Process a cognitive task based on its type
+   */
+  async processTask(task: CognitiveTask): Promise<TaskResult> {
+    let result: TaskResult;
+
+    switch (task.type) {
+      case 'inference':
+        result = await this.processInferenceChain(task.params as InferenceChainTask);
+        break;
+      case 'pattern_match':
+        result = await this.processPatternMatch(task.params as PatternMatchTask);
+        break;
+      case 'consolidation':
+        result = await this.processConsolidation(task.params as ConsolidationTask);
+        break;
+      case 'coordination':
+        result = await this.processCoordination(task.params as CoordinationTask);
+        break;
+      case 'learning':
+        result = await this.processLearning(task.params as LearningTask);
+        break;
+      default:
+        result = {
+          taskId: task.id,
+          status: 'failure',
+          error: `Unknown task type: ${task.type}`,
+          processingTime: 0,
+          completedAt: Date.now()
+        };
+    }
+
+    // Store the result
+    await this.storeResult(result);
+
+    return result;
   }
 
   /**
@@ -146,8 +186,8 @@ export class CloudflareQueueIntegration {
         })
       });
       
-      const result = await response.json();
-      
+      const result = await response.json() as { hasMore?: boolean; [key: string]: unknown };
+
       // If chain continues, enqueue next step
       if (task.currentDepth < task.maxDepth && result.hasMore) {
         await this.enqueueTask({
@@ -200,8 +240,8 @@ export class CloudflareQueueIntegration {
         })
       });
       
-      const result = await response.json();
-      
+      const result = await response.json() as Record<string, unknown>;
+
       return {
         taskId: `pattern:${task.atomSpaceId}`,
         status: 'success',
@@ -238,8 +278,8 @@ export class CloudflareQueueIntegration {
         })
       });
       
-      const result = await response.json();
-      
+      const result = await response.json() as { hasMore?: boolean; [key: string]: unknown };
+
       // If more batches needed, enqueue next batch
       if (result.hasMore) {
         await this.enqueueTask({
@@ -285,7 +325,7 @@ export class CloudflareQueueIntegration {
         const response = await atomSpace.fetch('https://internal/export', {
           method: 'GET'
         });
-        const data = await response.json();
+        const data = await response.json() as Record<string, unknown>;
         results.push({ nodeId: sourceNodeId, data });
       }
       
@@ -301,8 +341,8 @@ export class CloudflareQueueIntegration {
         })
       });
       
-      const result = await response.json();
-      
+      const result = await response.json() as Record<string, unknown>;
+
       return {
         taskId: `coordination:${task.targetNode}`,
         status: 'success',
@@ -338,8 +378,8 @@ export class CloudflareQueueIntegration {
         })
       });
       
-      const result = await response.json();
-      
+      const result = await response.json() as Record<string, unknown>;
+
       return {
         taskId: `learning:${task.atomSpaceId}`,
         status: 'success',
@@ -465,7 +505,7 @@ export class CloudflareQueueIntegration {
   /**
    * Select appropriate queue based on task type
    */
-  private selectQueue(taskType: CognitiveTask['type']): Queue {
+  private selectQueue(taskType: CognitiveTask['type']): Queue<unknown> {
     switch (taskType) {
       case 'inference':
         return this.env.INFERENCE_QUEUE;
@@ -481,7 +521,7 @@ export class CloudflareQueueIntegration {
   /**
    * Get AtomSpace Durable Object stub
    */
-  private async getAtomSpace(atomSpaceId: string): Promise<DurableObjectStub> {
+  private async getAtomSpace(atomSpaceId: string) {
     const id = this.env.ATOMSPACE_DO.idFromName(atomSpaceId);
     return this.env.ATOMSPACE_DO.get(id);
   }
@@ -534,22 +574,4 @@ export async function handleQueueMessage(
       message.retry();
     }
   }
-}
-
-// Type stubs
-interface Queue {
-  send(body: any, options?: { contentType?: string; delaySeconds?: number }): Promise<void>;
-  sendBatch(messages: Array<{ body: any; contentType?: string }>): Promise<void>;
-}
-
-interface MessageBatch {
-  messages: Array<{
-    body: any;
-    ack(): void;
-    retry(): void;
-  }>;
-}
-
-interface DurableObjectStub {
-  fetch(url: string, init?: RequestInit): Promise<Response>;
 }

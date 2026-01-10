@@ -26,6 +26,7 @@ export interface Env {
 
   // R2 Storage
   R2_ATOMSPACE: R2Bucket;
+  R2_COLD_STORAGE: R2Bucket;
 
   // KV Namespaces
   ATTENTION_CACHE: KVNamespace;
@@ -35,7 +36,9 @@ export interface Env {
   QUEUE_STATS: KVNamespace;
   SYNERGY_STATE: KVNamespace;
   ECHO_STATE: KVNamespace;
-  
+  KV_WARM_STORAGE: KVNamespace;
+  STORAGE_METADATA: KVNamespace;
+
   // New v5 KV Namespaces
   MOSES_STATE: KVNamespace;
   PLN_CACHE: KVNamespace;
@@ -43,9 +46,21 @@ export interface Env {
   MEMORY_STORE: KVNamespace;
   INSTANCE_REGISTRY: KVNamespace;
 
+  // Multi-tenant platform bindings
+  TENANT_REGISTRY: KVNamespace;
+  USAGE_TRACKER: KVNamespace;
+  SHARED_KNOWLEDGE: KVNamespace;
+  TENANT_ATOMSPACE_DO: DurableObjectNamespace;
+
   // Queues
-  COGNITIVE_QUEUE: Queue;
-  PRIORITY_QUEUE: Queue;
+  COGNITIVE_QUEUE: Queue<unknown>;
+  PRIORITY_QUEUE: Queue<unknown>;
+  INFERENCE_QUEUE: Queue<unknown>;
+  CONSOLIDATION_QUEUE: Queue<unknown>;
+  COORDINATION_QUEUE: Queue<unknown>;
+
+  // Task Results KV
+  TASK_RESULTS: KVNamespace;
 
   // AI
   AI: Ai;

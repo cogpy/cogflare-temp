@@ -259,9 +259,9 @@ export class Authenticator {
 	}
 
 	/**
-	 * Verify JWT token
-	 * 
-	 * In production, this should use proper JWT verification with public key
+	 * Verify JWT token using HMAC-SHA256
+	 *
+	 * Uses Web Crypto API for secure signature verification
 	 */
 	private async verifyJWT(token: string, env: any): Promise<any> {
 		// Split token into parts
@@ -270,14 +270,62 @@ export class Authenticator {
 			throw new Error("Invalid JWT format");
 		}
 
-		// Decode payload (base64url)
-		const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+		const [headerB64, payloadB64, signatureB64] = parts;
 
-		// In production, verify signature using public key
-		// For now, we'll just decode the payload
-		// TODO: Implement proper JWT signature verification
+		// Get secret from environment
+		const secret = env.JWT_SECRET;
+		if (!secret) {
+			throw new Error("JWT_SECRET not configured");
+		}
 
-		return payload;
+		// Verify signature using Web Crypto API
+		const encoder = new TextEncoder();
+		const signingInput = `${headerB64}.${payloadB64}`;
+
+		// Import the secret key
+		const key = await crypto.subtle.importKey(
+			"raw",
+			encoder.encode(secret),
+			{ name: "HMAC", hash: "SHA-256" },
+			false,
+			["verify"]
+		);
+
+		// Decode the signature from base64url
+		const signature = this.base64UrlDecode(signatureB64);
+
+		// Verify the signature
+		const isValid = await crypto.subtle.verify(
+			"HMAC",
+			key,
+			signature,
+			encoder.encode(signingInput)
+		);
+
+		if (!isValid) {
+			throw new Error("Invalid JWT signature");
+		}
+
+		// Decode and return payload
+		const payloadJson = new TextDecoder().decode(this.base64UrlDecode(payloadB64));
+		return JSON.parse(payloadJson);
+	}
+
+	/**
+	 * Decode base64url string to Uint8Array
+	 */
+	private base64UrlDecode(str: string): Uint8Array {
+		// Convert base64url to base64
+		const base64 = str.replace(/-/g, "+").replace(/_/g, "/");
+		// Add padding if needed
+		const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+		// Decode
+		const binary = atob(padded);
+		const bytes = new Uint8Array(binary.length);
+		for (let i = 0; i < binary.length; i++) {
+			bytes[i] = binary.charCodeAt(i);
+		}
+		return bytes;
 	}
 
 	/**

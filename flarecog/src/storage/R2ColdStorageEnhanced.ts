@@ -15,6 +15,7 @@
  */
 
 import { Atom, AttentionValue } from '../types/cognitive-v5';
+import type { R2Bucket, KVNamespace, DurableObjectNamespace } from '@cloudflare/workers-types';
 
 export interface StorageTier {
   name: 'hot' | 'warm' | 'cold';
@@ -574,8 +575,8 @@ export class R2ColdStorageEnhanced {
       return result.buffer;
     }
     
-    // Fallback: no compression
-    return input.buffer;
+    // Fallback: no compression - use slice to get a proper ArrayBuffer
+    return input.buffer.slice(0) as ArrayBuffer;
   }
 
   /**
@@ -694,16 +695,4 @@ export class R2ColdStorageEnhanced {
       tierMetrics.avgAccessTime = tierMetrics.avgAccessTime * 0.9 + accessTime * 0.1;
     }
   }
-}
-
-// Type stubs
-interface R2Bucket {
-  get(key: string): Promise<R2Object | null>;
-  put(key: string, value: ArrayBuffer | string, options?: any): Promise<void>;
-  delete(key: string): Promise<void>;
-}
-
-interface R2Object {
-  arrayBuffer(): Promise<ArrayBuffer>;
-  customMetadata?: Record<string, string>;
 }

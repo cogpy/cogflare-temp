@@ -399,14 +399,14 @@ export class EnhancedDistributedQueryEngine {
             return { atoms: [], bindings: [] };
           }
           
-          return await response.json();
+          return await response.json() as { atoms: Atom[]; bindings: Map<string, Atom>[] };
         } catch (error) {
           console.error(`Error querying remote node ${nodeId}:`, error);
-          return { atoms: [], bindings: [] };
+          return { atoms: [] as Atom[], bindings: [] as Map<string, Atom>[] };
         }
       }
     );
-    
+
     return await Promise.all(remotePromises);
   }
 
