@@ -403,6 +403,7 @@ async function runMindAgents(env: Env): Promise<void> {
 // ==================== Worker Export ====================
 
 export { AtomSpace, MindAgent };
+export { CRDTAtomSpaceCoordinator } from './durable-objects/CRDTAtomSpaceCoordinator';
 
 export default {
 	async fetch(
