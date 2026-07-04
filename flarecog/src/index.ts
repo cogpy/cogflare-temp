@@ -405,6 +405,9 @@ async function runMindAgents(env: Env): Promise<void> {
 export { AtomSpace, MindAgent };
 export { CRDTAtomSpaceCoordinator } from './durable-objects/CRDTAtomSpaceCoordinator';
 
+// Import unified queue consumer for advanced processing
+import { handleQueueBatch } from './handlers/QueueConsumer';
+
 export default {
 	async fetch(
 		request: Request,
@@ -415,7 +418,13 @@ export default {
 	},
 
 	async queue(batch: MessageBatch<any>, env: Env): Promise<void> {
-		await handleCognitiveQueue(batch, env);
+		// Route to unified queue consumer (handles gossip, MOSES, PLN, consolidation)
+		try {
+			await handleQueueBatch(batch as any, env as any);
+		} catch (error) {
+			// Fallback to legacy handler
+			await handleCognitiveQueue(batch, env);
+		}
 	},
 
 	async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
