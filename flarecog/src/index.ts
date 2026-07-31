@@ -17,6 +17,8 @@ import { V6_AGENTS, getAgentsByPriority } from './agents/v6-agents';
 import { CloudflareQueueIntegration } from './optimizations/CloudflareQueueIntegration';
 import { handleKSMRequest } from './api/ksm-endpoints';
 import { KSMEvolutionOrchestrator } from './cognitive/KSMEvolutionOrchestrator';
+import { handleIMIRequest } from './api/imi-endpoints';
+import { IterativeMicroImprovementLoop } from './evolution/IterativeMicroImprovement';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -126,6 +128,17 @@ app.all('/api/ksm/*', async (c) => {
 	const url = new URL(c.req.url);
 	const path = url.pathname;
 	const response = await handleKSMRequest(c.req.raw, c.env as any, path);
+	return new Response(response.body, {
+		status: response.status,
+		headers: response.headers,
+	});
+});
+
+// ==================== Iterative Micro-Improvement Endpoints ====================
+app.all('/api/imi/*', async (c) => {
+	const url = new URL(c.req.url);
+	const path = url.pathname;
+	const response = await handleIMIRequest(c.req.raw, c.env as any, path);
 	return new Response(response.body, {
 		status: response.status,
 		headers: response.headers,
@@ -428,6 +441,23 @@ async function runKSMEvolutionCycle(env: Env): Promise<void> {
   }
 }
 
+// ==================== Iterative Micro-Improvement Loop ====================
+
+async function runIMILoop(env: Env): Promise<void> {
+  console.log('Running Iterative Micro-Improvement Loop...');
+  try {
+    const loop = new IterativeMicroImprovementLoop(env.STORAGE_METADATA, env.AI);
+    const result = await loop.runIteration(env);
+    if (result) {
+      console.log(`IMI v${result.version}: dimension=${result.proposal.dimension} ` +
+        `target=${result.proposal.target} decision=${result.decision} ` +
+        `aiScore=${result.evaluation.aiAssessment.score}`);
+    }
+  } catch (error) {
+    console.error('IMI Loop error:', error);
+  }
+}
+
 // ==================== Worker Export ====================
 
 export { AtomSpace, MindAgent };
@@ -460,6 +490,8 @@ export default {
 		ctx.waitUntil(runMindAgents(env));
 		// Run KSM Evolution Cycle (the 12-step structure-preserving transformation)
 		ctx.waitUntil(runKSMEvolutionCycle(env));
+		// Run Iterative Micro-Improvement Loop (autonomous self-evolution)
+		ctx.waitUntil(runIMILoop(env));
 	}
 } satisfies ExportedHandler<Env>;
 
