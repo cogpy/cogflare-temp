@@ -15,6 +15,8 @@ import { MindAgent } from "./durable-objects/MindAgent";
 import v6Endpoints from './api/v6-endpoints';
 import { V6_AGENTS, getAgentsByPriority } from './agents/v6-agents';
 import { CloudflareQueueIntegration } from './optimizations/CloudflareQueueIntegration';
+import { handleKSMRequest } from './api/ksm-endpoints';
+import { KSMEvolutionOrchestrator } from './cognitive/KSMEvolutionOrchestrator';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -118,6 +120,17 @@ app.get("/", async (c) => {
 
 // ==================== Mount v6.0 API Endpoints ====================
 app.route('/api/v6', v6Endpoints);
+
+// ==================== KSM Evolution Orchestrator Endpoints ====================
+app.all('/api/ksm/*', async (c) => {
+	const url = new URL(c.req.url);
+	const path = url.pathname;
+	const response = await handleKSMRequest(c.req.raw, c.env as any, path);
+	return new Response(response.body, {
+		status: response.status,
+		headers: response.headers,
+	});
+});
 
 // ==================== Legacy AtomSpace API Routes ====================
 app.all("/atomspace/*", async (c) => {
@@ -400,6 +413,21 @@ async function runMindAgents(env: Env): Promise<void> {
   }
 }
 
+// ==================== KSM Evolution Cycle ====================
+
+async function runKSMEvolutionCycle(env: Env): Promise<void> {
+  console.log('Running KSM Evolution Cycle...');
+  try {
+    const orchestrator = new KSMEvolutionOrchestrator(env.STORAGE_METADATA);
+    const result = await orchestrator.runCycle(env);
+    console.log(`KSM Cycle #${result.cycleNumber}: weakest=${result.weakestAgent} ` +
+      `strategy=${result.classification.strategy} loss=${result.preLoss.toFixed(3)} ` +
+      `health=${result.selfImage.systemHealth.toFixed(3)}`);
+  } catch (error) {
+    console.error('KSM Evolution Cycle error:', error);
+  }
+}
+
 // ==================== Worker Export ====================
 
 export { AtomSpace, MindAgent };
@@ -428,7 +456,10 @@ export default {
 	},
 
 	async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+		// Run MindAgents
 		ctx.waitUntil(runMindAgents(env));
+		// Run KSM Evolution Cycle (the 12-step structure-preserving transformation)
+		ctx.waitUntil(runKSMEvolutionCycle(env));
 	}
 } satisfies ExportedHandler<Env>;
 
